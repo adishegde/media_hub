@@ -1,8 +1,16 @@
 {
-  "name": "media_hub",
-  "version": "1.0.0",
-  "description": "Tool for sharing files over LAN",
-  "main": "index.js",
-  "author": "Aditya Shridhar Hegde <adishegde@gmail.com>",
-  "license": "MIT"
+    "name": "media_hub",
+    "license": "MIT",
+    "author": "Aditya Shridhar Hegde <adishegde@gmail.com>",
+    "version": "1.0.0",
+    "scripts": {
+        "precommit": "pretty-quick --staged"
+    },
+    "devDependencies": {
+        "husky": "^0.14.3",
+        "pretty-quick": "^1.4.1",
+        "prettier": "^1.12.1"
+    },
+    "main": "index.js",
+    "description": "Tool for sharing files over LAN"
 }
