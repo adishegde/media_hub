@@ -1,0 +1,8 @@
+{
+  "name": "media_hub",
+  "version": "1.0.0",
+  "description": "Tool for sharing files over LAN",
+  "main": "index.js",
+  "author": "Aditya Shridhar Hegde <adishegde@gmail.com>",
+  "license": "MIT"
+}
