@@ -11,10 +11,14 @@
         "babel-cli": "^6.26.0",
         "babel-core": "^6.26.3",
         "babel-preset-env": "^1.6.1",
+        "eslint": "^4.19.1",
         "husky": "^0.14.3",
         "prettier": "^1.12.1",
         "pretty-quick": "^1.4.1"
     },
     "main": "index.js",
-    "description": "Tool for sharing files over LAN"
+    "description": "Tool for sharing files over LAN",
+    "dependencies": {
+        "winston": "^3.0.0-rc5"
+    }
 }
