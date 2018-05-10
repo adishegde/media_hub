@@ -1,6 +1,6 @@
 import clargsParser from "minimist";
 import * as ps from "process";
-import { addLogFile, logger as log } from "./log.js";
+import { addLogFile, logger as log } from "./utils/log.js";
 
 function commandLineOptions() {
     log.info("Parsing command line options.");
@@ -22,10 +22,10 @@ function commandLineOptions() {
 
 // Initial setup on start up
 function init() {
-    log.info("Starting Server.");
-
     // Parse cl options and setup app
     commandLineOptions();
+
+    log.info("Starting Server...");
 }
 
 // Initialize on startup
