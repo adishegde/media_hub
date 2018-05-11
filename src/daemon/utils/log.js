@@ -1,3 +1,5 @@
+/* Logging functionality for daemon. Exports a logger. */
+
 import * as winston from "winston";
 
 export const logger = winston.createLogger({

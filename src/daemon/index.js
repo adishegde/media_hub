@@ -1,3 +1,5 @@
+/* Entry point of daemon */
+
 import clargsParser from "minimist";
 import * as ps from "process";
 import { addLogFile, logger as log } from "./utils/log.js";
