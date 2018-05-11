@@ -29,7 +29,7 @@ export class Config {
     }
 
     // Write config to file and return promise for the action
-    update() {
+    write() {
         let config = {};
         for (let key of CONFIGKEYS) {
             config[key] = this[key];
@@ -49,9 +49,10 @@ export class Config {
                 );
             },
             e => {
-                // Log and rethrow error
-                logger.error(e);
-                throw e;
+                // Log error
+                logger.error(
+                    `Error while writing config to ${this.filename}: ${e}`
+                );
             }
         );
     }
