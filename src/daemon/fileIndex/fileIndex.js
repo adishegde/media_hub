@@ -2,13 +2,13 @@
  * index */
 
 import logger from "../utils/log.js";
-import * as fs from "fs";
-import * as util from "util";
-import * as path from "path";
+import * as Fs from "fs";
+import * as Util from "util";
+import * as Path from "path";
 
 // Promisify API's
-const readdir = util.promisify(fs.readdir);
-const lstat = util.promisify(fs.lstat);
+const readdir = Util.promisify(Fs.readdir);
+const lstat = Util.promisify(Fs.lstat);
 
 // TODO: Improve datastructure for index after considering storage of metadata
 // TODO: Index only when needed. Check mtime and ctime through lstat.
@@ -26,7 +26,7 @@ export class FileIndex {
             try {
                 // Synchronous since this is initialization
                 // Initial setup should be completed before accetpting requests
-                let stat = fs.lstatSync(path);
+                let stat = Fs.lstatSync(path);
                 if (!stat.isDirectory()) {
                     logger.error(
                         `${path} will not be indexed since it is not a directory.`
@@ -103,7 +103,7 @@ export class FileIndex {
         try {
             // Get content of directory asynchronously
             let fileNames = await readdir(dir);
-            let filePaths = fileNames.map(fileName => path.join(dir, fileName));
+            let filePaths = fileNames.map(fileName => Path.join(dir, fileName));
 
             // Call lstat asynchronously for each path to check if its a
             // directory

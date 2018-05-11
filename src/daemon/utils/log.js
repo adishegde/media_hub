@@ -1,13 +1,13 @@
 /* Logging functionality for daemon. Exports a logger. */
 
-import * as winston from "winston";
+import * as Winston from "winston";
 
-export const logger = winston.createLogger({
+export const logger = Winston.createLogger({
     transports: [
-        new winston.transports.Console({
+        new Winston.transports.Console({
             json: false,
             colorize: true,
-            format: winston.format.simple()
+            format: Winston.format.simple()
         })
     ]
 });
@@ -15,9 +15,9 @@ export const logger = winston.createLogger({
 export function addLogFile(filename, level) {
     let conf = {
         filename,
-        format: winston.format.combine(
-            winston.format.timestamp(),
-            winston.format.json()
+        format: Winston.format.combine(
+            Winston.format.timestamp(),
+            Winston.format.json()
         )
     };
 
@@ -25,7 +25,7 @@ export function addLogFile(filename, level) {
         conf.level = level;
     }
 
-    logger.add(new winston.transports.File(conf));
+    logger.add(new Winston.transports.File(conf));
 }
 
 export default logger;

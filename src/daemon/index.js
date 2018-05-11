@@ -1,13 +1,13 @@
 /* Entry point of daemon */
 
 import clargsParser from "minimist";
-import * as ps from "process";
+import * as Ps from "process";
 import { addLogFile, logger as log } from "./utils/log.js";
 
 function commandLineOptions() {
     log.info("Parsing command line options.");
 
-    let options = clargsParser(ps.argv.slice(2));
+    let options = clargsParser(Ps.argv.slice(2));
 
     if (options["log"]) {
         addLogFile(options["log"]);
