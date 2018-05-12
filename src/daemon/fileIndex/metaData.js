@@ -47,6 +47,13 @@ export class MetaData {
             throw error;
         }
 
+        // Bind methods to avoid unexpected binding errors
+        this.getData = this.getData.bind(this);
+        this.incrementDownload = this.incrementDownload.bind(this);
+        this.remove = this.remove.bind(this);
+        this.update = this.update.bind(this);
+        this.write = this.write.bind(this);
+
         // Set last write as current time
         this.lastWrite = new Date();
         this.writeInterval = writeInterval;
@@ -147,7 +154,7 @@ export class MetaData {
         if (currentTime - this.lastWrite > this.writeInterval) {
             return writeFile(this.dbPath, JSON.stringify(this.data)).then(
                 () => {
-                    logger.info(
+                    logger.debug(
                         `Wrote meta data to ${this.dbPath} successfully.`
                     );
 
