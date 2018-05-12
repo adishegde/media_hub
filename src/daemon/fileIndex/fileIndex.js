@@ -10,16 +10,165 @@ import * as Path from "path";
 const readdir = Util.promisify(Fs.readdir);
 const lstat = Util.promisify(Fs.lstat);
 
-// TODO: Improve datastructure for index after considering storage of metadata
-// TODO: Index only when needed. Check mtime and ctime through lstat.
+// Every node in the tree is an object of the form { path, files, dirs, ctime }
+// - path: Path of directory or file (in case of leaf)
+// - files: List of files the directory contains (empty in case of leaf)
+// - dirs: List of subdirectories in directory (empty in case of leaf)
+// - ctime: Change time as returned by lstat. Used to check if update is
+// required.
+class FileTree {
+    // Path of root directory of tree
+    constructor(rootDir) {
+        logger.debug(`Constructing FileTree rooted at ${rootDir}...`);
+
+        this.root = {
+            path: rootDir,
+            files: [],
+            dirs: [],
+            ctime: 0
+        };
+
+        // Bind methods to avoid unexpected binding errors
+        this.update = this.update.bind(this);
+        this.traverse = this.traverse.bind(this);
+    }
+
+    // Visits all files and directories that have been modified i.e. ctime
+    // has been changed
+    // Params:
+    // - update: Function that is called when we find new/modified file/dir
+    // - remove: Function that is called when we find removed file/dir
+    update(update, remove) {
+        logger.debug(`Upadting FileTree rooted at ${this.root}...`);
+        this.traverse(this.root, update, remove);
+    }
+
+    // Traverses through subtree at node and calls visit for modified
+    // directories and files
+    // Params:
+    // - node: Node to be tarversed
+    // -update, remove: same as update methods params
+    //
+    // Return Value:
+    //  A promise that is resolved when the subtree has been traversed. Promise
+    //  is resolved to true if no error occurred, false otherwise
+    async traverse(rootNode, update, remove) {
+        logger.debug(`Starting traversal of ${rootNode.path}`);
+
+        try {
+            let stat = await lstat(rootNode.path);
+            if (rootNode.ctime - stat.ctime !== 0) {
+                // Directory contents have been modified
+                logger.debug(`${rootNode.path} modified. Updating subtree...`);
+
+                // Set of path of old children
+                let oldChildren = new Set([
+                    ...rootNode.files.map(file => file.path),
+                    ...rootNode.dirs.map(dir => dir.path)
+                ]);
+                // Array of paths of new/current children
+                let currChildrenList = (await readdir(rootNode.path)).map(
+                    child => {
+                        return Path.join(rootNode.path, child);
+                    }
+                );
+                // Set of paths of new/current children
+                let currChildren = new Set(currChildrenList);
+
+                // We do not care about modification in content of files. Thus
+                // we call "update" if we find a new file and "remove" if we
+                // find removed file. Renaming is one removal and one addition.
+
+                // New children
+                currChildren.forEach(child => {
+                    if (!oldChildren.has(child)) update(child);
+                });
+
+                // Removed children
+                oldChildren.forEach(child => {
+                    if (!currChildren.has(child)) remove(child);
+                });
+
+                // Update ctime
+                rootNode.ctime = stat.ctime;
+
+                // Get stats for new children to check if they are files or
+                // directories
+                let statList = currChildrenList.map(child => lstat(child));
+                statList = await Promise.all(statList);
+
+                // Update file list
+                let files = currChildrenList.filter((child, ind) =>
+                    statList[ind].isFile()
+                );
+                rootNode.files = files.map(file => ({
+                    path: file
+                }));
+
+                // Keep non removed dir from previous list
+                let dirNodes = rootNode.dirs.filter(node =>
+                    currChildren.has(node.path)
+                );
+                // Get new directories
+                let newDirs = currChildrenList.filter(
+                    (child, ind) =>
+                        statList[ind].isDirectory() && !oldChildren.has(child)
+                );
+                // Updating dir is not as trivial as updating files since we
+                // have to persist files, dirs list and ctime for subdirs
+                rootNode.dirs = [
+                    ...dirNodes,
+                    ...newDirs.map(dir => ({
+                        path: dir,
+                        files: [],
+                        dirs: [],
+                        ctime: 0 // New dir have to udpated
+                    }))
+                ];
+            }
+
+            // Call traverse for all sub directories
+            let subdirTrav = rootNode.dirs.map(dir => {
+                return this.traverse(dir, update, remove);
+            });
+            await Promise.all(subdirTrav);
+
+            update(rootNode.path);
+
+            logger.debug(`Completed traversing subtree at ${rootNode.path}`);
+
+            return true;
+        } catch (error) {
+            logger.error(`Error while traversing ${rootNode.path}: ${error}`);
+            logger.error(error.stack);
+            return false;
+        }
+    }
+}
+
 export class FileIndex {
     // Params:
     // - dirs: Array of dirs that should be indexed. Only directories are
     // indexed.
-    //
-    // - indexInterval: The interval between each indexing in milli seconds
-    constructor(dirs, indexInterval) {
+    // - pollingInterval: The interval between each indexing in milli seconds
+    // - metaData: Object of class MetaData.
+    constructor(dirs, metaData, pollingInterval = 4000) {
         logger.info("Initializing FileIndex...");
+
+        if (!dirs) {
+            logger.error("Array of dirs not passed to FileIndex constructor.");
+            throw new Error(
+                "Array of dir not passed to FileIndex constructor."
+            );
+        }
+        if (!metaData) {
+            logger.error(
+                "MetaData object not passed to FileIndex constructor."
+            );
+            throw new Error(
+                "MetaData object not passed to FileIndex constructor."
+            );
+        }
 
         // Filter out directories from array of paths
         this.dirs = dirs.filter(path => {
@@ -45,11 +194,16 @@ export class FileIndex {
             return true;
         });
 
-        this.interval = indexInterval;
+        // Bind methods to avoid unexpected binding errors
+        this.start = this.start.bind(this);
+        this.stop = this.stop.bind(this);
+        this.index = this.index.bind(this);
 
-        // files is the array of indexed files
-        // Assigned an empty array to avoid null/undefined errors
-        this.files = [];
+        this.interval = pollingInterval;
+        this.meta = metaData;
+
+        // Forest of FileTrees corresponding to each direcotry in dirs
+        this.forest = this.dirs.map(dir => new FileTree(dir));
 
         this.index();
         // Start indexing periodically
@@ -63,7 +217,7 @@ export class FileIndex {
         logger.info("Starting periodic file indexing...");
 
         // Store timer id so that it can be cancelled afterwards if needed
-        this.indexTimerId = setInterval(this.index.bind(this), this.interval);
+        this.indexTimerId = setInterval(this.index, this.interval);
     }
 
     // Stop indexing files
@@ -77,71 +231,22 @@ export class FileIndex {
     // Return Value:
     //  A promise that is resolved when the index is successfully completed
     index() {
-        logger.info("Starting to index files...");
+        logger.debug("Starting to index files...");
+        var currTime = new Date();
 
-        let dirsIndexes = this.dirs.map(path => this.indexDir(path));
+        let treeUpdates = this.forest.map(tree =>
+            tree.update(this.meta.update, this.meta.remove)
+        );
 
-        return Promise.all(dirsIndexes).then(indexes => {
-            // Merge all file paths from all directories into one array
-            // and update index
-            this.files = indexes.reduce((acc, index) => acc.concat(index), []);
-        });
-    }
-
-    // Index a directory.
-    // Params:
-    // - dir: The absolute path of the directory to be indexed
-    //
-    // Return Value:
-    //  A promise that is resolved to array of paths of each file in the
-    //  directory and its subdirectories
-    async indexDir(dir) {
-        let currDirIndex = [];
-
-        logger.info(`Indexing ${dir} ...`);
-
-        try {
-            // Get content of directory asynchronously
-            let fileNames = await readdir(dir);
-            let filePaths = fileNames.map(fileName => Path.join(dir, fileName));
-
-            // Call lstat asynchronously for each path to check if its a
-            // directory
-            let statList = filePaths.map(path => lstat(path));
-            // Continue when stat for all paths have been recieved
-            statList = await Promise.all(statList);
-
-            let recursiveIndex = [];
-
-            // Recursively index and add promises to recursiveIndex
-            statList.forEach((stat, ind) => {
-                if (stat.isDirectory()) {
-                    recursiveIndex.push(this.indexDir(filePaths[ind]));
-                }
-
-                if (stat.isFile() || stat.isDirectory()) {
-                    // Add path to index if it is a file or directory
-                    currDirIndex.push(filePaths[ind]);
-                }
+        return Promise.all(treeUpdates)
+            .then(() => {
+                this.meta.write();
+                logger.debug(
+                    `Done with indexing which was started at ${currTime}`
+                );
+            })
+            .catch(error => {
+                logger.error(`An error occurred while indexing: ${error}`);
             });
-
-            // If a promise is rejected, empty array is returned. No need of
-            // error handling here
-            recursiveIndex = await Promise.all(recursiveIndex);
-
-            recursiveIndex.forEach(index => {
-                currDirIndex.push(...index);
-            });
-
-            logger.info(`Finished indexing ${dir}`);
-
-            return currDirIndex;
-        } catch (error) {
-            logger.error(`Error occured while indexing ${dir}: ${error}`);
-            logger.error(`Aborting indexing of ${dir}`);
-
-            // Return empty array
-            return [];
-        }
     }
 }
