@@ -105,7 +105,8 @@ export class MetaData {
             description,
             downloads,
             tags,
-            type
+            type,
+            path
         };
     }
 
@@ -173,5 +174,12 @@ export class MetaData {
         }
 
         return Promise.resolve(false);
+    }
+
+    // Get array of meta data objects
+    // Return Value:
+    //  Array of meta data objects for each file that is indexed
+    getFileList() {
+        return Object.values(this.data);
     }
 }
