@@ -1,10 +1,11 @@
 /* Periodically updating file index. Search results are provided from this
  * index */
 
-import logger from "../utils/log.js";
 import * as Fs from "fs";
 import * as Util from "util";
 import * as Path from "path";
+
+import logger from "../utils/log.js";
 
 // Promisify API's
 const readdir = Util.promisify(Fs.readdir);

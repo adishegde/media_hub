@@ -1,6 +1,7 @@
 /* Manage read and write of config files. */
 
 import { readFileSync, writeFile } from "fs";
+
 import logger from "./log.js";
 
 // The keys to be retrieved from config file

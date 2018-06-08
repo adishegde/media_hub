@@ -1,6 +1,7 @@
 /* UDP service handles search queries */
 
 import dgram from "dgram";
+
 import logger from "../utils/log";
 
 /* The UDP service listens on a given port and responds to incoming search
