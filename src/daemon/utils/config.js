@@ -3,13 +3,9 @@
 import { readFileSync, writeFile } from "fs";
 
 import logger from "./log.js";
+import { CONFIGKEYS } from "./constants";
 
-// The keys to be retrieved from config file
-const CONFIGKEYS = [
-    "shared" // Array of directories that are to be shared
-];
-
-export class Config {
+export default class Config {
     constructor(filename) {
         this.filename = filename;
 

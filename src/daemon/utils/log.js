@@ -8,7 +8,7 @@ export const logger = Winston.createLogger({
             json: false,
             colorize: true,
             format: Winston.format.simple(),
-            level: "silly"
+            level: "debug"
         })
     ]
 });
