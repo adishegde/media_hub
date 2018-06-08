@@ -21,6 +21,7 @@
     "dependencies": {
         "fuse.js": "^3.2.0",
         "minimist": "^1.2.0",
+        "uuid": "^3.2.1",
         "winston": "^3.0.0-rc5"
     }
 }

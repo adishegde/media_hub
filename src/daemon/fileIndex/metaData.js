@@ -2,9 +2,12 @@
  * json file */
 
 import * as Fs from "fs";
-import logger from "../utils/log.js";
 import * as Util from "util";
 import * as Path from "path";
+import uuid from "uuid/v5";
+
+import logger from "../utils/log.js";
+import { UUID_NAMESPACE } from "../utils/constants";
 
 let writeFile = Util.promisify(Fs.writeFile);
 let lstat = Util.promisify(Fs.lstat);
@@ -16,6 +19,9 @@ let readdir = Util.promisify(Fs.readdir);
  *   and in case of a directory, the maximum of downloads of it's children.
  * - description: Description of file/directory.
  * - tags: Tags classifying the file or directory.
+ * - type: File or Directory.
+ * - path: Path to directory or file.
+ * - id: The uuid for corresponding to the path
 */
 
 export class MetaData {
@@ -47,6 +53,12 @@ export class MetaData {
             throw error;
         }
 
+        // Create hash to path mapping
+        this.hashMap = {};
+        Object.keys(this.data).forEach(path => {
+            this.hashMap[uuid(path, UUID_NAMESPACE)] = path;
+        });
+
         // Bind methods to avoid unexpected binding errors
         this.getData = this.getData.bind(this);
         this.incrementDownload = this.incrementDownload.bind(this);
@@ -75,6 +87,7 @@ export class MetaData {
         let description = "";
         let tags = [];
         let type = "file";
+        let id = uuid(path, UUID_NAMESPACE);
 
         if (this.data[path]) {
             // Get previous value if available
@@ -106,8 +119,15 @@ export class MetaData {
             downloads,
             tags,
             type,
-            path
+            path,
+            id
         };
+
+        this.hashMap[id] = path;
+    }
+
+    getPathFromId(id) {
+        return this.hashMap[id];
     }
 
     // Get meta data of path
