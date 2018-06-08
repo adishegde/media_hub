@@ -7,12 +7,19 @@
 
 import Fuse from "fuse.js";
 
-export class SearchHandler {
+export default class SearchHandler {
     // Params:
     //  - metaDataHandler: Object of class MetaData
     //  - maxResults: Number of results to return. If less than 0 all results
     //  will be returned else specified number
     constructor(metaDataHandler, maxResults = -1) {
+        if (!metaDataHandler) {
+            logger.error(
+                "MetaData object not passed to FileIndex constructor."
+            );
+            throw Error("MetaData object not passed to FileIndex constructor.");
+        }
+
         this.metaData = metaDataHandler;
         this.maxResults = maxResults;
     }

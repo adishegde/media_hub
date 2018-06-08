@@ -146,7 +146,7 @@ class FileTree {
     }
 }
 
-export class FileIndex {
+export default class FileIndex {
     // Params:
     // - dirs: Array of dirs that should be indexed. Only directories are
     // indexed.

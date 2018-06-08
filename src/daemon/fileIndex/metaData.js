@@ -24,7 +24,7 @@ let readdir = Util.promisify(Fs.readdir);
  * - id: The uuid for corresponding to the path
 */
 
-export class MetaData {
+export default class MetaData {
     // Params
     // - dbPath: Path to database (json file) (default: ./meta.json).
     // - writeInterval: Interval between consecutive writes (default: 10 sec)
