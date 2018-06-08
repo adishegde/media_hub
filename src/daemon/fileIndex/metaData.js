@@ -165,7 +165,7 @@ export default class MetaData {
     write() {
         let currentTime = new Date();
 
-        logger.debug(
+        logger.silly(
             `Request to write meta data to ${
                 this.dbPath
             }. Time elapsed after last write: ${currentTime -
@@ -175,7 +175,7 @@ export default class MetaData {
         if (currentTime - this.lastWrite > this.writeInterval) {
             return writeFile(this.dbPath, JSON.stringify(this.data)).then(
                 () => {
-                    logger.debug(
+                    logger.silly(
                         `Wrote meta data to ${this.dbPath} successfully.`
                     );
 

@@ -20,7 +20,7 @@ const lstat = Util.promisify(Fs.lstat);
 class FileTree {
     // Path of root directory of tree
     constructor(rootDir) {
-        logger.debug(`Constructing FileTree rooted at ${rootDir}...`);
+        logger.silly(`Constructing FileTree rooted at ${rootDir}...`);
 
         this.root = {
             path: rootDir,
@@ -40,7 +40,7 @@ class FileTree {
     // - update: Function that is called when we find new/modified file/dir
     // - remove: Function that is called when we find removed file/dir
     update(update, remove) {
-        logger.debug(`Upadting FileTree rooted at ${this.root}...`);
+        logger.silly(`Upadting FileTree rooted at ${this.root}...`);
         this.traverse(this.root, update, remove);
     }
 
@@ -54,7 +54,7 @@ class FileTree {
     //  A promise that is resolved when the subtree has been traversed. Promise
     //  is resolved to true if no error occurred, false otherwise
     async traverse(rootNode, update, remove) {
-        logger.debug(`Starting traversal of ${rootNode.path}`);
+        logger.silly(`Starting traversal of ${rootNode.path}`);
 
         try {
             let stat = await lstat(rootNode.path);
@@ -136,7 +136,7 @@ class FileTree {
 
             update(rootNode.path);
 
-            logger.debug(`Completed traversing subtree at ${rootNode.path}`);
+            logger.silly(`Completed traversing subtree at ${rootNode.path}`);
 
             return true;
         } catch (error) {
@@ -206,11 +206,8 @@ export default class FileIndex {
         // Forest of FileTrees corresponding to each direcotry in dirs
         this.forest = this.dirs.map(dir => new FileTree(dir));
 
+        // Index once
         this.index();
-        // Start indexing periodically
-        // However start initially waits till time period is over before
-        // indexing first
-        this.start();
     }
 
     // Periodically index files
@@ -232,7 +229,7 @@ export default class FileIndex {
     // Return Value:
     //  A promise that is resolved when the index is successfully completed
     index() {
-        logger.debug("Starting to index files...");
+        logger.silly("Starting to index files...");
         var currTime = new Date();
 
         let treeUpdates = this.forest.map(tree =>
@@ -242,7 +239,7 @@ export default class FileIndex {
         return Promise.all(treeUpdates)
             .then(() => {
                 this.meta.write();
-                logger.debug(
+                logger.silly(
                     `Done with indexing which was started at ${currTime}`
                 );
             })
