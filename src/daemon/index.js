@@ -2,32 +2,77 @@
 
 import clargsParser from "minimist";
 import * as Ps from "process";
+
 import { addLogFile, logger as log } from "./utils/log.js";
+import Server from "./server";
+import Config from "./utils/config";
+import { CONFIGKEYS } from "./utils/constants";
+
+// Options from CONFIGKEYS to be passed to server
+const SERVEROPTS = [
+    "port",
+    "networkName",
+    "shared",
+    "pollingInterval",
+    "dbPath",
+    "dbwriteInterval",
+    "maxResults"
+];
+
+// Options passed to server
+const options = {};
+let server = null;
 
 function commandLineOptions() {
     log.info("Parsing command line options.");
 
-    let options = clargsParser(Ps.argv.slice(2));
+    let cargs = clargsParser(Ps.argv.slice(2));
 
-    if (options["log"]) {
-        addLogFile(options["log"]);
-        log.info(`Logging to "${options["log"]}".`);
+    if (cargs["config"]) {
+        log.info("Config file specified, parsing config file options.");
+
+        let configHandler = new Config(cargs["config"]);
+        CONFIGKEYS.forEach(key => {
+            if (configHandler[key]) options[key] = configHandler[key];
+        });
     }
 
-    if (options["error-log"]) {
-        addLogFile(options["error-log"], "error");
-        log.info(`Logging errors to "${options["error-log"]}".`);
-    }
+    CONFIGKEYS.forEach(key => {
+        if (cargs[key]) options[key] = cargs[key];
+    });
 
     log.info("Done parsing command line options.");
 }
 
+function setup() {
+    if (options["log"]) {
+        addLogFile(options["log"], "info");
+    }
+    if (options["errorLog"]) {
+        addLogFile(options["errorLog"], "error");
+    }
+
+    const serverOpts = {};
+    SERVEROPTS.forEach(key => {
+        if (options[key]) serverOpts[key] = options[key];
+    });
+
+    server = new Server(serverOpts);
+    server.start();
+}
+
 // Initial setup on start up
 function init() {
-    // Parse cl options and setup app
-    commandLineOptions();
+    try {
+        // Parse cl options and setup app
+        commandLineOptions();
 
-    log.info("Starting Server...");
+        // Use options to setup resources and start server
+        setup();
+    } catch (err) {
+        log.error(`index.js: ${err}`);
+        log.debug(`index.js: ${err.stack}`);
+    }
 }
 
 // Initialize on startup
