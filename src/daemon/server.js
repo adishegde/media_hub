@@ -2,6 +2,7 @@
  * services */
 
 import UDPService from "./services/udp";
+import HTTPService from "./services/http";
 import MetaData from "./fileIndex/metaData";
 import FileIndex from "./fileIndex/fileIndex";
 import SearchHandler from "./fileIndex/searchHandler";
@@ -35,12 +36,14 @@ export default class Server {
                 port,
                 networkName
             );
+            this.httpServer = new HTTPService(this.metaDataHandler, port);
         } catch (err) {
             logger.error(`Server: ${err}`);
             logger.debug(`Server: ${err.stack}`);
 
             this.udpServer.stop();
             this.fileIndex.stop();
+            this.httpServer.stop();
 
             throw err;
         }
@@ -50,10 +53,12 @@ export default class Server {
     start() {
         this.fileIndex.start();
         this.udpServer.start();
+        this.httpServer.start();
     }
 
     stop() {
         this.fileIndex.stop();
         this.udpServer.stop();
+        this.httpServer.stop();
     }
 }
