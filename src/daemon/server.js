@@ -41,9 +41,10 @@ export default class Server {
             logger.error(`Server: ${err}`);
             logger.debug(`Server: ${err.stack}`);
 
-            this.udpServer.stop();
-            this.fileIndex.stop();
-            this.httpServer.stop();
+            // Stop if initialized
+            if (this.udpServer) this.udpServer.stop();
+            if (this.fileIndex) this.fileIndex.stop();
+            if (this.httpServer) this.httpServer.stop();
 
             throw err;
         }

@@ -78,7 +78,7 @@ export default class UDPservice {
 
             this.handleQuery(query, rinf);
         } catch (err) {
-            logger.error(`UDPService: ${err}`);
+            logger.info(`UDPService: ${err}`);
             logger.debug(`UDPService: ${err.stack}`);
             return;
         }
