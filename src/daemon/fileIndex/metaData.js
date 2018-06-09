@@ -140,6 +140,11 @@ export default class MetaData {
         return this.data[path];
     }
 
+    // Returns true if metaData for path is present
+    hasFile(path) {
+        return this.data.hasOwnProperty(path);
+    }
+
     // Increase downloads by 1 for path
     // Params:
     // - path: Path for which downloads has to be increased.
