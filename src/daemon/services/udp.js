@@ -29,14 +29,12 @@ export default class UDPservice {
         this.port = port;
         this.networkName = networkName;
 
-        // Create UDP4 socket with reuseAddr
+        // Create UDP4 socket with reuseAddr i.e. bind socket even if it is in
+        // TIME_WAIT state
         this.socket = dgram.createSocket("udp4", true);
 
         this.socket
             .on("listening", () => {
-                // Set broadcast to true
-                this.socket.setBroadcast(true);
-
                 let addr = this.socket.address();
                 logger.info(
                     `UDPService: Listening on ${addr.address}:${addr.port}`
