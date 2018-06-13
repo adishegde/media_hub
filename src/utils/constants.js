@@ -17,4 +17,13 @@ const CONFIGKEYS = [
     "errorLog"
 ];
 
-export { UUID_NAMESPACE, CONFIGKEYS };
+const DEFAULT_SERVER = {
+    pollingInterval: 4000,
+    writeInterval: 10000,
+    dbPath: "./meta.json",
+    maxResults: 10
+};
+
+const DEFAULT_NETWORK = "Media_Hub";
+
+export { UUID_NAMESPACE, CONFIGKEYS, DEFAULT_SERVER, DEFAULT_NETWORK };

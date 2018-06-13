@@ -7,7 +7,10 @@ import * as Path from "path";
 import uuid from "uuid/v5";
 
 import logger from "../../utils/log";
-import { UUID_NAMESPACE } from "../../utils/constants";
+import {
+    UUID_NAMESPACE,
+    DEFAULT_SERVER as DEFAULT
+} from "../../utils/constants";
 
 let writeFile = Util.promisify(Fs.writeFile);
 let lstat = Util.promisify(Fs.lstat);
@@ -26,9 +29,12 @@ let readdir = Util.promisify(Fs.readdir);
 
 export default class MetaData {
     // Params
-    // - dbPath: Path to database (json file) (default: ./meta.json).
-    // - writeInterval: Interval between consecutive writes (default: 10 sec)
-    constructor(dbPath = "./meta.json", writeInterval = 10000) {
+    // - dbPath: Path to database (json file)
+    // - writeInterval: Interval between consecutive writes
+    constructor(
+        dbPath = DEFAULT.dbPath,
+        writeInterval = DEFAULT.writeInterval
+    ) {
         this.dbPath = dbPath;
 
         // Synchronous functions used here since we need initialized data

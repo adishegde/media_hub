@@ -6,6 +6,7 @@ import * as Util from "util";
 import * as Path from "path";
 
 import logger from "../../utils/log";
+import { DEFAULT_SERVER as DEFAULT } from "../../utils/constants";
 
 // Promisify API's
 const readdir = Util.promisify(Fs.readdir);
@@ -153,7 +154,7 @@ export default class FileIndex {
     // indexed.
     // - pollingInterval: The interval between each indexing in milli seconds
     // - metaData: Object of class MetaData.
-    constructor(dirs, metaData, pollingInterval = 4000) {
+    constructor(dirs, metaData, pollingInterval = DEFAULT.pollingInterval) {
         logger.info("Initializing FileIndex...");
 
         if (!dirs) {

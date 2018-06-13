@@ -3,6 +3,7 @@
 import Dgram from "dgram";
 
 import logger from "../../utils/log";
+import { DEFAULT_NETWORK } from "../../utils/constants";
 
 /* The UDP service listens on a given port and responds to incoming search
  * queries on the port of the client. Thus it makes no assumption about the
@@ -15,7 +16,7 @@ export default class UDPservice {
     //  results.
     //  - port: Port at which the UDP server should listen.
     //  - networkName: Identifier for network
-    constructor(searchHandler, port, networkName = "Media_Hub") {
+    constructor(searchHandler, port, networkName = DEFAULT_NETWORK) {
         if (!searchHandler) {
             logger.error("SearchHandler not passed to UDPService constructor.");
             throw Error("SearchHandler not passed to UDPService constructor.");
