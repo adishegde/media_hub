@@ -10,7 +10,8 @@ import { CONFIGKEYS } from "../utils/constants";
 
 // Options from CONFIGKEYS to be passed to server
 const SERVEROPTS = [
-    "port",
+    "udpPort",
+    "httpPort",
     "networkName",
     "shared",
     "pollingInterval",

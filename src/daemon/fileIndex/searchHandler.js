@@ -13,9 +13,10 @@ import { DEFAULT_SERVER as DEFAULT } from "../../utils/constants";
 export default class SearchHandler {
     // Params:
     //  - metaDataHandler: Object of class MetaData
-    //  - maxResults: Number of results to return. If less than 0 all results
+    //  - An object having the following properties:
+    //    - maxResults [optional]: Number of results to return. If less than 0 all results
     //  will be returned else specified number
-    constructor(metaDataHandler, maxResults = DEFAULT.maxResults) {
+    constructor(metaDataHandler, { maxResults = DEFAULT.maxResults }) {
         if (!metaDataHandler) {
             logger.error(
                 "MetaData object not passed to FileIndex constructor."

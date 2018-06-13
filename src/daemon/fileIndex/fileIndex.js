@@ -150,11 +150,15 @@ class FileTree {
 
 export default class FileIndex {
     // Params:
-    // - dirs: Array of dirs that should be indexed. Only directories are
-    // indexed.
-    // - pollingInterval: The interval between each indexing in milli seconds
     // - metaData: Object of class MetaData.
-    constructor(dirs, metaData, pollingInterval = DEFAULT.pollingInterval) {
+    // - An object having properties:
+    //   - dirs: Array of dirs that should be indexed. Only directories are
+    // indexed.
+    //   - pollingInterval [optional]: The interval between each indexing in milli seconds
+    constructor(
+        metaData,
+        { shared: dirs, pollingInterval = DEFAULT.pollingInterval }
+    ) {
         logger.info("Initializing FileIndex...");
 
         if (!dirs) {

@@ -11,32 +11,16 @@ import logger from "../utils/log";
 export default class Server {
     // Error will be thrown if port and directories are undefined. Defaults
     // exist for other options
-    constructor({
-        port,
-        networkName,
-        shared,
-        pollingInterval,
-        dbPath,
-        dbwriteInterval,
-        maxResults
-    }) {
+    constructor(config) {
         try {
-            this.metaDataHandler = new MetaData(dbPath, dbwriteInterval);
-            this.fileIndex = new FileIndex(
-                shared,
-                this.metaDataHandler,
-                pollingInterval
-            );
+            this.metaDataHandler = new MetaData(config);
+            this.fileIndex = new FileIndex(this.metaDataHandler, config);
             this.searchHandler = new SearchHandler(
                 this.metaDataHandler,
-                maxResults
+                config
             );
-            this.udpServer = new UDPService(
-                this.searchHandler,
-                port,
-                networkName
-            );
-            this.httpServer = new HTTPService(this.metaDataHandler, port);
+            this.udpServer = new UDPService(this.searchHandler, config);
+            this.httpServer = new HTTPService(this.metaDataHandler, config);
         } catch (err) {
             logger.error(`Server: ${err}`);
             logger.debug(`Server: ${err.stack}`);

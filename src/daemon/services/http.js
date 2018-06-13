@@ -6,18 +6,19 @@ import * as Util from "util";
 import * as Path from "path";
 
 import logger from "../../utils/log";
+import { DEFAULT_HTTP_PORT } from "../../utils/constants";
 
 let readdir = Util.promisify(Fs.readdir);
 
 export default class HTTPService {
-    constructor(metaData, port) {
+    // Params:
+    //  - metaData: An object of class MetaData.
+    //  - A config object of having properties:
+    //    - port [optional]: Port on which HTTP service should run
+    constructor(metaData, { httpPort: port = DEFAULT_HTTP_PORT }) {
         if (!metaData) {
             logger.error("MetaData object not passed to HTTPService.");
             throw Error("MetaData object not passed to HTTPService.");
-        }
-        if (!port) {
-            logger.error("Port not passed to HTTPService.");
-            throw Error("Port not passed to HTTPService.");
         }
 
         this.metaData = metaData;

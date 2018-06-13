@@ -29,12 +29,13 @@ let readdir = Util.promisify(Fs.readdir);
 
 export default class MetaData {
     // Params
-    // - dbPath: Path to database (json file)
-    // - writeInterval: Interval between consecutive writes
-    constructor(
+    // - An object having params:
+    //   - dbPath [optional]: Path to database (json file)
+    //   - writeInterval [optional]: Interval between consecutive writes
+    constructor({
         dbPath = DEFAULT.dbPath,
-        writeInterval = DEFAULT.writeInterval
-    ) {
+        dbWriteInterval = DEFAULT.dbWriteInterval
+    }) {
         this.dbPath = dbPath;
 
         // Synchronous functions used here since we need initialized data
@@ -74,7 +75,7 @@ export default class MetaData {
 
         // Set last write as current time
         this.lastWrite = new Date();
-        this.writeInterval = writeInterval;
+        this.writeInterval = dbWriteInterval;
 
         logger.info(`Loaded meta data from ${dbPath} successfully.`);
     }

@@ -6,7 +6,8 @@ const UUID_NAMESPACE = "4b94ccfc-ea76-47e0-b5f3-e2b4b4b23728";
 
 // Config options
 const CONFIGKEYS = [
-    "port",
+    "udpPort",
+    "httpPort",
     "networkName",
     "shared",
     "pollingInterval",
@@ -19,11 +20,22 @@ const CONFIGKEYS = [
 
 const DEFAULT_SERVER = {
     pollingInterval: 4000,
-    writeInterval: 10000,
+    dbWriteInterval: 10000,
     dbPath: "./meta.json",
     maxResults: 10
 };
 
 const DEFAULT_NETWORK = "Media_Hub";
 
-export { UUID_NAMESPACE, CONFIGKEYS, DEFAULT_SERVER, DEFAULT_NETWORK };
+// Default ports for running services
+const DEFAULT_UDP_PORT = 31341;
+const DEFAULT_HTTP_PORT = 31341;
+
+export {
+    UUID_NAMESPACE,
+    CONFIGKEYS,
+    DEFAULT_SERVER,
+    DEFAULT_NETWORK,
+    DEFAULT_HTTP_PORT,
+    DEFAULT_UDP_PORT
+};
