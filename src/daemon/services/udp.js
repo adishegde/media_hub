@@ -1,8 +1,8 @@
 /* UDP service handles search queries */
 
-import dgram from "dgram";
+import Dgram from "dgram";
 
-import logger from "../utils/log";
+import logger from "../../utils/log";
 
 /* The UDP service listens on a given port and responds to incoming search
  * queries on the port of the client. Thus it makes no assumption about the
@@ -31,7 +31,7 @@ export default class UDPservice {
 
         // Create UDP4 socket with reuseAddr i.e. bind socket even if it is in
         // TIME_WAIT state
-        this.socket = dgram.createSocket("udp4", true);
+        this.socket = Dgram.createSocket("udp4", true);
 
         this.socket
             .on("listening", () => {

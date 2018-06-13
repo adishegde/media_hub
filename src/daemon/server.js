@@ -6,7 +6,7 @@ import HTTPService from "./services/http";
 import MetaData from "./fileIndex/metaData";
 import FileIndex from "./fileIndex/fileIndex";
 import SearchHandler from "./fileIndex/searchHandler";
-import logger from "./utils/log";
+import logger from "../utils/log";
 
 export default class Server {
     // Error will be thrown if port and directories are undefined. Defaults

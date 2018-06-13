@@ -6,8 +6,8 @@ import * as Util from "util";
 import * as Path from "path";
 import uuid from "uuid/v5";
 
-import logger from "../utils/log.js";
-import { UUID_NAMESPACE } from "../utils/constants";
+import logger from "../../utils/log";
+import { UUID_NAMESPACE } from "../../utils/constants";
 
 let writeFile = Util.promisify(Fs.writeFile);
 let lstat = Util.promisify(Fs.lstat);

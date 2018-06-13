@@ -5,7 +5,7 @@ import * as Fs from "fs";
 import * as Util from "util";
 import * as Path from "path";
 
-import logger from "../utils/log.js";
+import logger from "../../utils/log";
 
 // Promisify API's
 const readdir = Util.promisify(Fs.readdir);

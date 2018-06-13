@@ -1,11 +1,11 @@
 // HTTP service serves file meta data and the file itself
-import http from "http";
+import Http from "http";
 import { URL } from "url";
 import * as Fs from "fs";
 import * as Util from "util";
 import * as Path from "path";
 
-import logger from "../utils/log";
+import logger from "../../utils/log";
 
 let readdir = Util.promisify(Fs.readdir);
 
@@ -23,7 +23,7 @@ export default class HTTPService {
         this.metaData = metaData;
         this.port = port;
 
-        this.server = http.createServer(this.rootHandler.bind(this));
+        this.server = Http.createServer(this.rootHandler.bind(this));
         this.server
             .on("clientError", (err, socket) => {
                 logger.error(`HTTPService: clientError`);

@@ -7,6 +7,8 @@
 
 import Fuse from "fuse.js";
 
+import logger from "../../utils/log";
+
 export default class SearchHandler {
     // Params:
     //  - metaDataHandler: Object of class MetaData

@@ -3,10 +3,10 @@
 import clargsParser from "minimist";
 import * as Ps from "process";
 
-import { addLogFile, logger as log } from "./utils/log.js";
 import Server from "./server";
-import Config from "./utils/config";
-import { CONFIGKEYS } from "./utils/constants";
+import { addLogFile, logger as log } from "../utils/log";
+import Config from "../utils/config";
+import { CONFIGKEYS } from "../utils/constants";
 
 // Options from CONFIGKEYS to be passed to server
 const SERVEROPTS = [
