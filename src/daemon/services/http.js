@@ -39,8 +39,8 @@ export default class HTTPService {
                 );
             })
             .on("error", err => {
-                logger.error(`UDPService: ${err}`);
-                logger.debug(`UDPService: ${err.stack}`);
+                logger.error(`HTTPService: ${err}`);
+                logger.debug(`HTTPService: ${err.stack}`);
             })
             .on("close", () => {
                 logger.info("HTTPService: Service stopped");
