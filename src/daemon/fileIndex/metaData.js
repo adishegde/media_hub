@@ -5,12 +5,14 @@ import * as Fs from "fs";
 import * as Util from "util";
 import * as Path from "path";
 import uuid from "uuid/v5";
+import Winston from "winston";
 
-import logger from "../../utils/log";
 import {
     UUID_NAMESPACE,
     DEFAULT_SERVER as DEFAULT
 } from "../../utils/constants";
+
+const logger = Winston.loggers.get("daemon");
 
 let writeFile = Util.promisify(Fs.writeFile);
 let lstat = Util.promisify(Fs.lstat);

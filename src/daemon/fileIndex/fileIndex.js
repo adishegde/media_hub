@@ -4,9 +4,11 @@
 import * as Fs from "fs";
 import * as Util from "util";
 import * as Path from "path";
+import Winston from "winston";
 
-import logger from "../../utils/log";
 import { DEFAULT_SERVER as DEFAULT } from "../../utils/constants";
+
+const logger = Winston.loggers.get("daemon");
 
 // Promisify API's
 const readdir = Util.promisify(Fs.readdir);

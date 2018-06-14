@@ -1,28 +1,30 @@
 /* Manage read and write of config files. */
 
 import { readFileSync, writeFile } from "fs";
+import Winston from "winston";
 
-import logger from "./log.js";
 import { CONFIGKEYS } from "./constants";
 
 export default class Config {
+    // Params:
+    //  - filename: config file to parse
     constructor(filename) {
+        if (typeof filename !== "string") {
+            throw Error("Config: Valid filename not passed");
+        }
+
         this.filename = filename;
 
         let fileData;
         try {
             fileData = JSON.parse(readFileSync(filename));
         } catch (e) {
-            // Log and rethrow error
-            logger.error(e);
             throw e;
         }
 
         for (let key of CONFIGKEYS) {
             this[key] = fileData[key];
         }
-
-        logger.info(`Loaded config data from ${filename} successfully.`);
     }
 
     // Write config to file and return promise for the action
@@ -39,18 +41,6 @@ export default class Config {
                 if (err) reject();
                 else resolve();
             });
-        }).then(
-            () => {
-                logger.info(
-                    `Wrote to config file ${this.filename} successfully.`
-                );
-            },
-            e => {
-                // Log error
-                logger.error(
-                    `Error while writing config to ${this.filename}: ${e}`
-                );
-            }
-        );
+        });
     }
 }

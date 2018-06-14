@@ -15,7 +15,8 @@ const CONFIGKEYS = [
     "dbwriteInterval",
     "maxResults",
     "log",
-    "errorLog"
+    "errorLog",
+    "logLevel"
 ];
 
 const DEFAULT_SERVER = {

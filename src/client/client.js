@@ -2,13 +2,15 @@
 
 import Dgram from "dgram";
 
-import logger from "../utils/log";
+import Winston from "winston";
 import {
     DEFAULT_CLIENT as DEFAULT,
     DEFAULT_UDP_PORT,
     DEFAULT_NETWORK,
     DEFAULT_HTTP_PORT
 } from "../utils/constants";
+
+const logger = Winston.loggers.get("client");
 
 export default class Client {
     // Params:

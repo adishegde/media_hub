@@ -2,11 +2,14 @@
 
 import clargsParser from "minimist";
 import * as Ps from "process";
+import Winston from "winston";
 
 import Server from "./server";
-import { addLogFile, logger as log } from "../utils/log";
+import { addLogFile, addConsoleLog } from "../utils/log";
 import Config from "../utils/config";
 import { CONFIGKEYS } from "../utils/constants";
+
+const logger = Winston.loggers.get("daemon");
 
 // Options from CONFIGKEYS to be passed to server
 const SERVEROPTS = [
@@ -25,13 +28,9 @@ const options = {};
 let server = null;
 
 function commandLineOptions() {
-    log.info("Parsing command line options.");
-
     let cargs = clargsParser(Ps.argv.slice(2));
 
     if (cargs["config"]) {
-        log.info("Config file specified, parsing config file options.");
-
         let configHandler = new Config(cargs["config"]);
         CONFIGKEYS.forEach(key => {
             if (configHandler[key]) options[key] = configHandler[key];
@@ -41,16 +40,17 @@ function commandLineOptions() {
     CONFIGKEYS.forEach(key => {
         if (cargs[key]) options[key] = cargs[key];
     });
-
-    log.info("Done parsing command line options.");
 }
 
 function setup() {
+    // Add console log
+    addConsoleLog("daemon", options["logLevel"]);
+
     if (options["log"]) {
-        addLogFile(options["log"], "info");
+        addLogFile("daemon", options["log"], options["logLevel"]);
     }
     if (options["errorLog"]) {
-        addLogFile(options["errorLog"], "error");
+        addLogFile("daemon", options["errorLog"], "error");
     }
 
     const serverOpts = {};
@@ -71,8 +71,8 @@ function init() {
         // Use options to setup resources and start server
         setup();
     } catch (err) {
-        log.error(`index.js: ${err}`);
-        log.debug(`index.js: ${err.stack}`);
+        logger.error(`index.js: ${err}`);
+        logger.debug(`index.js: ${err.stack}`);
     }
 }
 

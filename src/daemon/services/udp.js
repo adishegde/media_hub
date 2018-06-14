@@ -1,14 +1,16 @@
 /* UDP service handles search queries */
 
 import Dgram from "dgram";
+import Winston from "winston";
 
-import logger from "../../utils/log";
 import { DEFAULT_NETWORK, DEFAULT_UDP_PORT } from "../../utils/constants";
 
 /* The UDP service listens on a given port and responds to incoming search
  * queries on the port of the client. Thus it makes no assumption about the
  * client port.
  */
+
+const logger = Winston.loggers.get("daemon");
 
 export default class UDPservice {
     // Params:

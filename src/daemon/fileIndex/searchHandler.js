@@ -6,9 +6,11 @@
  */
 
 import Fuse from "fuse.js";
+import Winston from "winston";
 
-import logger from "../../utils/log";
 import { DEFAULT_SERVER as DEFAULT } from "../../utils/constants";
+
+const logger = Winston.loggers.get("daemon");
 
 export default class SearchHandler {
     // Params:

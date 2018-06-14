@@ -2,31 +2,34 @@
 
 import * as Winston from "winston";
 
-export const logger = Winston.createLogger({
-    transports: [
-        new Winston.transports.Console({
-            json: false,
-            colorize: true,
-            format: Winston.format.simple(),
-            level: "debug"
-        })
-    ]
-});
+Winston.loggers.add("daemon", Winston.createLogger());
+Winston.loggers.add("client", Winston.createLogger());
 
-export function addLogFile(filename, level) {
+export function addConsoleLog(name, level) {
+    let logger = Winston.loggers.get(name);
+
+    let trans = new Winston.transports.Console({
+        name: "console",
+        json: false,
+        colorize: true,
+        format: Winston.format.simple(),
+        level: level || "info"
+    });
+
+    logger.add(trans);
+}
+
+export function addLogFile(name, filename, level) {
+    let logger = Winston.loggers.get(name);
+
     let conf = {
         filename,
         format: Winston.format.combine(
             Winston.format.timestamp(),
             Winston.format.json()
-        )
+        ),
+        level: level || "info"
     };
-
-    if (level) {
-        conf.level = level;
-    }
 
     logger.add(new Winston.transports.File(conf));
 }
-
-export default logger;
