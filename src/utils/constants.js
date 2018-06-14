@@ -4,11 +4,11 @@
 // Base uuid for namespace
 const UUID_NAMESPACE = "4b94ccfc-ea76-47e0-b5f3-e2b4b4b23728";
 
-// Config options for server
+// Config options
 const CONFIGKEYS = [
     "udpPort",
     "httpPort",
-    "networkName",
+    "network",
     "shared",
     "pollingInterval",
     "dbPath",

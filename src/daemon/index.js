@@ -15,7 +15,7 @@ const logger = Winston.loggers.get("daemon");
 const SERVEROPTS = [
     "udpPort",
     "httpPort",
-    "networkName",
+    "network",
     "shared",
     "pollingInterval",
     "dbPath",

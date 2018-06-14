@@ -18,7 +18,7 @@ export default class Client {
     //   - port: The port to which the client should bind to.
     //   - udpPort: The port of UDP server to which requests should be sent
     //   - httpPort: The port of the HTTP server for making requests
-    //   - networkName [optional]: The network to which requests should
+    //   - network [optional]: The network to which requests should
     //   belong. Default is "Media_Hub".
     //   - broadcastIp [optional]: The IP address to which broadcasts will
     //   be made. Default value is "255.255.255.255".
@@ -28,14 +28,14 @@ export default class Client {
         clientPort: port = DEFAULT.port,
         udpPort = DEFAULT_UDP_PORT,
         httpPort = DEFAULT_HTTP_PORT,
-        networkName = DEFAULT_NETWORK,
+        network = DEFAULT_NETWORK,
         broadcastIp = DEFAULT.broadcastIp,
         timeout = DEFAULT.timeout
     }) {
         this.port = port;
         this.udpPort = udpPort;
         this.httpPort = httpPort;
-        this.networkName = networkName;
+        this.network = network;
         this.broadcastIp = broadcastIp;
         this.timeout = timeout;
     }
@@ -58,7 +58,7 @@ export default class Client {
             }
 
             let request = {
-                network: this.networkName,
+                network: this.network,
                 search: searchString,
                 param: param || "default"
             };

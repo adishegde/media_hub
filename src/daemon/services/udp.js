@@ -18,10 +18,10 @@ export default class UDPservice {
     //  results.
     //  - An object having properties:
     //    - port [optional]: Port at which the UDP server should listen.
-    //    - networkName [optional]: Identifier for network
+    //    - network [optional]: Identifier for network
     constructor(
         searchHandler,
-        { udpPort: port = DEFAULT_UDP_PORT, networkName = DEFAULT_NETWORK }
+        { udpPort: port = DEFAULT_UDP_PORT, network = DEFAULT_NETWORK }
     ) {
         if (!searchHandler) {
             logger.error("SearchHandler not passed to UDPService constructor.");
@@ -30,7 +30,7 @@ export default class UDPservice {
 
         this.searchHandler = searchHandler;
         this.port = port;
-        this.networkName = networkName;
+        this.network = network;
 
         // Create UDP4 socket with reuseAddr i.e. bind socket even if it is in
         // TIME_WAIT state
@@ -70,7 +70,7 @@ export default class UDPservice {
     process(mssg, rinf) {
         try {
             let query = JSON.parse(mssg);
-            if (query.network !== this.networkName) {
+            if (query.network !== this.network) {
                 throw Error("Query doesn't belong to same network");
             }
             if (!query.search) {
