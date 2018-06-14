@@ -15,7 +15,7 @@ import {
 const logger = Winston.loggers.get("daemon");
 
 let writeFile = Util.promisify(Fs.writeFile);
-let lstat = Util.promisify(Fs.lstat);
+let fstat = Util.promisify(Fs.stat);
 let readdir = Util.promisify(Fs.readdir);
 
 /* Each path has the following data:
@@ -89,7 +89,7 @@ export default class MetaData {
     // Return Value:
     //  A promise that is resolved when the update is complete
     async update(path) {
-        let stat = await lstat(path);
+        let stat = await fstat(path);
 
         let name = Path.basename(path);
         let downloads = 0;

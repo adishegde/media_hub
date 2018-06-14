@@ -12,13 +12,13 @@ const logger = Winston.loggers.get("daemon");
 
 // Promisify API's
 const readdir = Util.promisify(Fs.readdir);
-const lstat = Util.promisify(Fs.lstat);
+const fstat = Util.promisify(Fs.stat);
 
 // Every node in the tree is an object of the form { path, files, dirs, ctime }
 // - path: Path of directory or file (in case of leaf)
 // - files: List of files the directory contains (empty in case of leaf)
 // - dirs: List of subdirectories in directory (empty in case of leaf)
-// - ctime: Change time as returned by lstat. Used to check if update is
+// - ctime: Change time as returned by fstat. Used to check if update is
 // required.
 class FileTree {
     // Path of root directory of tree
@@ -60,7 +60,7 @@ class FileTree {
         logger.silly(`Starting traversal of ${rootNode.path}`);
 
         try {
-            let stat = await lstat(rootNode.path);
+            let stat = await fstat(rootNode.path);
             if (rootNode.ctime - stat.ctime !== 0) {
                 // Directory contents have been modified
                 logger.debug(`${rootNode.path} modified. Updating subtree...`);
@@ -98,7 +98,7 @@ class FileTree {
 
                 // Get stats for new children to check if they are files or
                 // directories
-                let statList = currChildrenList.map(child => lstat(child));
+                let statList = currChildrenList.map(child => fstat(child));
                 statList = await Promise.all(statList);
 
                 // Update file list
@@ -183,7 +183,7 @@ export default class FileIndex {
             try {
                 // Synchronous since this is initialization
                 // Initial setup should be completed before accetpting requests
-                let stat = Fs.lstatSync(path);
+                let stat = Fs.statSync(path);
                 if (!stat.isDirectory()) {
                     logger.error(
                         `${path} will not be indexed since it is not a directory.`

@@ -10,7 +10,8 @@ import { DEFAULT_HTTP_PORT } from "../../utils/constants";
 
 const logger = Winston.loggers.get("daemon");
 
-let readdir = Util.promisify(Fs.readdir);
+const readdir = Util.promisify(Fs.readdir);
+const fstat = Util.promisify(Fs.stat);
 
 export default class HTTPService {
     // Params:
@@ -148,13 +149,19 @@ export default class HTTPService {
             });
         }
 
-        // Path is a file
-        res.writeHead(200, {
-            "Content-Type": "application/octet-stream"
+        // Serve file data
+        return fstat(path).then(stat => {
+            res.writeHead(200, {
+                "Content-Type": "application/octet-stream",
+                "Content-Length": stat.size
+            });
+
+            let fileStream = Fs.createReadStream(path);
+            fileStream.pipe(res);
+
+            // Increment download
+            this.metaData.incrementDownload(path);
         });
-        let fileStream = Fs.createReadStream(path);
-        fileStream.pipe(res);
-        this.metaData.incrementDownload(path);
     }
 
     // Validates URL
