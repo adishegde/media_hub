@@ -5,6 +5,7 @@ import * as Fs from "fs";
 import * as Util from "util";
 import * as Path from "path";
 import Winston from "winston";
+import Mime from "mime-types";
 
 import { DEFAULT_HTTP_PORT } from "../../utils/constants";
 
@@ -150,18 +151,17 @@ export default class HTTPService {
         }
 
         // Serve file data
-        return fstat(path).then(stat => {
-            res.writeHead(200, {
-                "Content-Type": "application/octet-stream",
-                "Content-Length": stat.size
-            });
-
-            let fileStream = Fs.createReadStream(path);
-            fileStream.pipe(res);
-
-            // Increment download
-            this.metaData.incrementDownload(path);
+        res.writeHead(200, {
+            "Content-Type": Mime.lookup(path) || "application/octet-stream",
+            "Content-Length": data.size,
+            "Content-Disposition": `inline; filename="${data.name}"`
         });
+
+        let fileStream = Fs.createReadStream(path);
+        fileStream.pipe(res);
+
+        // Increment download
+        this.metaData.incrementDownload(path);
     }
 
     // Validates URL

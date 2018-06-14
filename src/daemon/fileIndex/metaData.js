@@ -26,6 +26,7 @@ let readdir = Util.promisify(Fs.readdir);
  * - tags: Tags classifying the file or directory.
  * - type: File or Directory.
  * - path: Path to directory or file.
+ * - size: Size of file or number of files in directory
  * - id: The uuid for corresponding to the path
 */
 
@@ -97,6 +98,7 @@ export default class MetaData {
         let tags = [];
         let type = "file";
         let id = uuid(path, UUID_NAMESPACE);
+        let size = stat.size;
 
         if (this.data[path]) {
             // Get previous value if available
@@ -129,6 +131,7 @@ export default class MetaData {
             tags,
             type,
             path,
+            size,
             id
         };
 
