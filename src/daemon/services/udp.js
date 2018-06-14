@@ -110,7 +110,7 @@ export default class UDPservice {
 
         // Complete response object
         let response = {
-            network: query.networkName,
+            network: query.network,
             search: query.search,
             param: query.param,
             results: results
