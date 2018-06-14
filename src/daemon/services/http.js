@@ -124,6 +124,8 @@ export default class HTTPService {
 
         // If directory return directory listing
         if (data.type === "dir") {
+            // Returning promise here
+            // Promises are used because of async readdir operation
             return readdir(path).then(children => {
                 children = children.map(child => Path.join(path, child));
 
@@ -150,15 +152,34 @@ export default class HTTPService {
             });
         }
 
-        // Serve file data
-        res.writeHead(200, {
-            "Content-Type": Mime.lookup(path) || "application/octet-stream",
-            "Content-Length": data.size,
-            "Content-Disposition": `inline; filename="${data.name}"`
-        });
+        if (req.headers.range) {
+            // Calculate range of data to serve
+            let range = req.headers.range;
+            let parts = range.replace(/bytes=/, "").split("-");
+            let start = parseInt(parts[0], 10);
+            let end = parts[1] ? parseInt(parts[1], 10) : data.size - 1;
+            let chunksize = end - start + 1;
 
-        let fileStream = Fs.createReadStream(path);
-        fileStream.pipe(res);
+            let fileStream = Fs.createReadStream(path, { start, end });
+
+            res.writeHead(206, {
+                "Content-Range": `bytes ${start}-${end}/${data.size}`,
+                "Accept-Ranges": "bytes",
+                "Content-Length": chunksize,
+                "Content-Type": Mime.lookup(path) || "application/octet-stream"
+            });
+            fileStream.pipe(res);
+        } else {
+            // Serve entire file if no range specified
+            res.writeHead(200, {
+                "Content-Type": Mime.lookup(path) || "application/octet-stream",
+                "Content-Length": data.size,
+                "Content-Disposition": `inline; filename="${data.name}"`
+            });
+
+            let fileStream = Fs.createReadStream(path);
+            fileStream.pipe(res);
+        }
 
         // Increment download
         this.metaData.incrementDownload(path);
