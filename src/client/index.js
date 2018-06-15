@@ -66,8 +66,15 @@ function run() {
         case "info":
             return info();
 
-        case "default":
-            return Promise.reject("Unknown command.");
+        case "list":
+            return list();
+
+        case "usage":
+            return usage();
+
+        default:
+            console.log("Unknown command.\n");
+            return usage();
     }
 }
 
@@ -149,6 +156,66 @@ function info() {
     });
 }
 
+function list() {
+    let url = command[1];
+    if (!url) return Promise.reject("URL not given.");
+
+    let ct = new Client({});
+    return ct.getDirectoryInfo(url).then(data => {
+        let table = {};
+
+        data.children.forEach(child => {
+            table[child.name] = {
+                URL: child.url,
+                Type: child.type
+            };
+        });
+
+        console.table(table);
+    });
+}
+
+function usage() {
+    const usageInfo = {
+        search: {
+            command: "search <search string> [param]",
+            description:
+                "Search for files having names and tags 'param' as <search string>. Default match param and tag"
+        },
+        download: {
+            command: "download <url> [dpath]",
+            description:
+                "Download file or directory to 'dpath' where 'dpath' can be new directory/file name or parent directory's name"
+        },
+        info: {
+            command: "info <url>",
+            description: "View meta information about file or directory."
+        },
+        list: {
+            command: "list <url>",
+            description: "View subfiles of a directory."
+        },
+        usage: {
+            command: "usage",
+            description: "View this message."
+        },
+        options: {
+            command: "--<option>",
+            description:
+                "Options given to command.\n - clientPort: Port for making UDP requests on client (default 31342).\n - udpPort: Server's UDP port to which client should make a request (default 31340).\n - httpPort: Server's HTTP port to which client should make a request (default 31340).\n - network: The network to which request should be made (default 'Media_Hub').\n - broadcastIp: The broadcast IP address (default '255.255.255.255')\n - timeout: Time to wait for UDP responses (default 3000ms)\n - incoming: Default directory for downloads.\n - debug: Enable detailed logging.\n - config: JSON file which can contain any of the above properties."
+        }
+    };
+
+    console.log("Usage:");
+    for (let opt of Object.keys(usageInfo)) {
+        console.log(usageInfo[opt].command);
+        console.log(usageInfo[opt].description);
+        console.log("\n");
+    }
+
+    return Promise.resolve();
+}
+
 function main() {
     try {
         // Parse cl options
@@ -159,7 +226,8 @@ function main() {
 
     // Execute given command
     run().catch(err => {
-        console.log(`Media_Hub.Client: ${err}`);
+        console.log(`${err}`);
+        logger.debug(`Media_Hub.Client: ${err.stack}`);
     });
 }
 
