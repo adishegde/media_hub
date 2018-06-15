@@ -1,6 +1,7 @@
 import clargsParser from "minimist";
 import * as Ps from "process";
 import Winston from "winston";
+import Progress from "cli-progress";
 
 import Client from "./client";
 import { addLogFile, addConsoleLog } from "../utils/log";
@@ -13,7 +14,8 @@ const CLIENTOPTS = [
     "httpPort",
     "network",
     "broadcastIp",
-    "timeout"
+    "timeout",
+    "incoming"
 ];
 
 const options = {};
@@ -43,7 +45,7 @@ function commandLineOptions() {
 
 function search() {
     // Check if search string is provided
-    if (!command[1]) throw Error("No search string provided.");
+    if (!command[1]) Promise.reject("No search string provided.");
 
     const ct = new Client(options);
     console.log(
@@ -54,7 +56,7 @@ function search() {
 
     // Display results
     // command[2] denotes the param
-    ct.search(command[1], command[2]).then(data => {
+    return ct.search(command[1], command[2]).then(data => {
         if (data.length === 0) {
             console.log("No results found.");
         } else {
@@ -71,6 +73,7 @@ function search() {
     });
 }
 
+// Returns promise for executed command
 function run() {
     // Add console transport
     let logLevel = "error";
@@ -85,24 +88,54 @@ function run() {
     // Take different actions depending on command
     switch (command[0]) {
         case "search":
-            search();
-            break;
+            return search();
+
+        case "download":
+            return download();
 
         case "default":
-            throw Error("Unknown command.");
+            return Promise.reject("Unknown command.");
     }
+}
+
+function download() {
+    let url = command[1];
+    if (!url) return Promise.reject("URL not given.");
+
+    let ct = new Client({ incoming: options.incoming });
+    let pb;
+    return ct
+        .downloadFile(url, command[2], (downloaded, size) => {
+            if (!pb) {
+                pb = new Progress.Bar(
+                    {
+                        format:
+                            "Downloading: [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} bytes"
+                    },
+                    Progress.Presets.shades_classic
+                );
+                pb.start(size, downloaded);
+            }
+            pb.update(downloaded);
+        })
+        .then(path => {
+            pb.stop();
+            console.log(`\nFile downloaded to ${path}`);
+        });
 }
 
 function main() {
     try {
         // Parse cl options
         commandLineOptions();
-
-        // Execute given command
-        run();
     } catch (err) {
         console.log(err);
     }
+
+    // Execute given command
+    run().catch(err => {
+        console.log(err);
+    });
 }
 
 main();

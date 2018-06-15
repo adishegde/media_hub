@@ -20,6 +20,7 @@
     "main": "index.js",
     "description": "Tool for sharing files over LAN",
     "dependencies": {
+        "cli-progress": "^2.0.0",
         "fuse.js": "^3.2.0",
         "mime-types": "^2.1.18",
         "minimist": "^1.2.0",
