@@ -18,6 +18,7 @@ import {
 const logger = Winston.loggers.get("client");
 const fstat = Util.promisify(Fs.stat);
 const fsaccess = Util.promisify(Fs.access);
+const mkdir = Util.promisify(Fs.mkdir);
 
 // Function that actually downloads file served at url to given path. No check
 // performed for path or callback to make it efficient. Error if path already
@@ -88,6 +89,67 @@ function _download(url, path, pathIsDir, callback) {
                 res.pipe(downloadedFile);
             });
     });
+}
+
+// Function that actually downloads the entire directory. No check is performed
+// for path, url or callback. Error if can't write to path.
+// All checks done Client member functions.
+// Params:
+//  - url: URL of parent directory
+//  - path: Path to parent directory
+//  - callback: callback is sent bytes downloaded, file size and path as
+//  arguments
+async function _downloadDir(url, path, callback) {
+    let res = await new Promise((resolve, reject) => {
+        // extremely minimal error handling in case it is not directory URL
+        http(`http://${url}`, res => {
+            let data = "";
+
+            res
+                .on("data", chunk => {
+                    data += chunk;
+                })
+                .on("end", () => {
+                    try {
+                        resolve(JSON.parse(data));
+                    } catch (err) {
+                        reject("Corrupted response");
+                    }
+                });
+        });
+    });
+
+    let childDownloadPromise = [];
+    let host = new URL(`http://${url}`).host;
+
+    for (let child of res.children) {
+        if (child.type === "file") {
+            // If file download file
+            childDownloadPromise.push(
+                _download(
+                    `${host}/${child.id}`,
+                    Path.join(path, child.name),
+                    false,
+                    callback
+                )
+            );
+        } else {
+            // If directory, create directory and then download directory
+            let childPath = Path.join(path, child.name);
+
+            childDownloadPromise.push(
+                mkdir(childPath).then(() => {
+                    return _downloadDir(
+                        `${host}/${child.id}`,
+                        childPath,
+                        callback
+                    );
+                })
+            );
+        }
+    }
+
+    return Promise.all(childDownloadPromise);
 }
 
 export default class Client {
@@ -237,7 +299,7 @@ export default class Client {
 
     // Download file
     // Params:
-    //  - url: URL of file or directory to be downloaded.
+    //  - url: URL of file to be downloaded.
     //  - path [optional]: Path to save file. Can be name of file or directory. If not
     //  given will be saved to incoming.
     //  - callback [optional]: Called when progress is updated. The bytes
@@ -318,6 +380,131 @@ export default class Client {
             return await _download(url, path, pathIsDir, callback);
         } catch (err) {
             logger.debug(`Client.downloadFile: ${err}`);
+            throw err;
+        }
+    }
+
+    // Download directory
+    // Params:
+    //  - url: URL of directory to be downloaded.
+    //  - path [optional]: Path to save file. Can be name of file or directory. If not
+    //  given will be saved to incoming.
+    //  - callback [optional]: Called when progress is updated. The bytes
+    //  downloaded, file size and path where file is downloaded will be passed
+    //  as arguments.
+    async downloadDirectory(url, path, callback) {
+        let pathIsParent = false;
+
+        // After the if block path is null only if path is not an existing
+        // directory or dirname of path is not an existing directory
+        if (path) {
+            try {
+                let stat = await fstat(path);
+
+                // if path is directory we are done
+                if (stat.isDirectory()) {
+                    pathIsParent = true;
+                } else if (stat.isFile()) {
+                    // If a file exists at path then thow Error
+                    throw Error(`File exists at ${path}`);
+                }
+            } catch (err) {
+                try {
+                    // path does not exist. Maybe it's the final path of the
+                    // new directory.  Check if parent directory exists.
+                    if (err.code === "ENOENT") {
+                        // Promise is rejected if parent directory doesn't exist
+                        let stat = await fstat(Path.dirname(path));
+
+                        // if parent directory exists then ok
+                        if (!stat.isDirectory()) {
+                            throw Error("Invalid path passed");
+                        }
+                    } else {
+                        // If error is not ENOENT then rethrow
+                        throw err;
+                    }
+                } catch (err) {
+                    logger.debug(`Client.downloadDirectory: ${err}`);
+                    logger.debug(`Client.downloadDirectory: ${err.stack}`);
+                    // If parent directory does not exist, or if stat for path
+                    // throws an error other than ENOENT then assign path to
+                    // falsy value
+                    path = null;
+                }
+            }
+        }
+
+        if (!path) {
+            path = this.incoming;
+            pathIsParent = true;
+        }
+
+        // If callback is not function, ignore silently
+        if (typeof callback !== "function") {
+            logger.debug(
+                `Client.downloadDirectory: callback is of type ${typeof callback}. Ignoring callback.`
+            );
+            // assign callback to empty function
+            callback = () => {};
+        }
+
+        try {
+            if (!path) throw Error("No valid incoming or path passed");
+            if (!url) throw Error("No url passed");
+
+            let res = await new Promise((resolve, reject) => {
+                http(`http://${url}`, res => {
+                    let data = "";
+
+                    if (res.headers["content-type"] !== "application/json")
+                        throw Error("URL does not correspond to directory");
+
+                    res
+                        .on("data", chunk => {
+                            data += chunk;
+                        })
+                        .on("end", () => {
+                            try {
+                                resolve(JSON.parse(data));
+                            } catch (err) {
+                                reject("Corrupted response");
+                            }
+                        });
+                });
+            });
+
+            if (!res.children)
+                throw Error("URL does not correspond to directory.");
+
+            let dirName = res.name;
+            if (pathIsParent) {
+                path = Path.join(path, dirName);
+
+                try {
+                    let stat = await fstat(path);
+
+                    if (stat.isDirectory())
+                        throw Error(`Directory already exists at ${path}`);
+                } catch (err) {
+                    // If directory does not exist then it's good since we won't
+                    // be affecting existing data
+                    if (err.code !== "ENOENT") {
+                        throw err;
+                    }
+                }
+            }
+
+            // path is now set properly
+            await mkdir(path);
+
+            // Download directory
+            await _downloadDir(url, path, callback);
+
+            return path;
+        } catch (err) {
+            logger.debug(`Client.downloadDirectory: ${err}`);
+            logger.debug(`Client.downloadDirectory: ${err.stack}`);
             throw err;
         }
     }
