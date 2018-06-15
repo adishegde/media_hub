@@ -76,7 +76,12 @@ function _download(url, path, pathIsDir, callback) {
                         // called only if writeStream opened successfully
                         res.on("data", chunk => {
                             bytesDownloaded += chunk.length;
-                            callback(bytesDownloaded, fileSize, path);
+                            try {
+                                // Don't stop download due to callback errors
+                                callback(bytesDownloaded, fileSize, path);
+                            } catch (err) {
+                                logger.debug(`_download: ${err}`);
+                            }
                         });
                     })
                     .on("finish", () => {
