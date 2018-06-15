@@ -566,4 +566,43 @@ export default class Client {
             });
         });
     }
+
+    getDirectoryInfo(url) {
+        if (!url) {
+            return Promise.reject("URL not passed.");
+        }
+
+        return new Promise((resolve, reject) => {
+            http(url, res => {
+                let data = "";
+
+                if (res.headers["content-type"] !== "application/json")
+                    throw Error("URL does not correspond to directory");
+
+                res
+                    .on("data", chunk => {
+                        data += chunk;
+                    })
+                    .on("end", () => {
+                        try {
+                            resolve(JSON.parse(data));
+                        } catch (err) {
+                            reject("Corrupted response");
+                        }
+                    });
+            });
+        }).then(data => {
+            if (!data.children)
+                throw Error("URL does not correspond to directory");
+
+            let origin = new URL(url).origin;
+
+            data.children = data.children.map(child => ({
+                ...child,
+                url: `${origin}/${child.id}`
+            }));
+
+            return data;
+        });
+    }
 }
