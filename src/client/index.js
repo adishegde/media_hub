@@ -43,6 +43,34 @@ function commandLineOptions() {
     command = cargs._;
 }
 
+// Returns promise for executed command
+function run() {
+    // Add console transport
+    let logLevel = "error";
+    if (options.debug) {
+        // This is a small hack. There is no logging of level above debug in
+        // Client class. Thus we set to error level to disable logging and set
+        // it to debug to enable logging.
+        logLevel = "debug";
+    }
+    addConsoleLog("client", logLevel);
+
+    // Take different actions depending on command
+    switch (command[0]) {
+        case "search":
+            return search();
+
+        case "download":
+            return download();
+
+        case "info":
+            return info();
+
+        case "default":
+            return Promise.reject("Unknown command.");
+    }
+}
+
 function search() {
     // Check if search string is provided
     if (!command[1]) Promise.reject("No search string provided.");
@@ -73,40 +101,24 @@ function search() {
     });
 }
 
-// Returns promise for executed command
-function run() {
-    // Add console transport
-    let logLevel = "error";
-    if (options.debug) {
-        // This is a small hack. There is no logging of level above debug in
-        // Client class. Thus we set to error level to disable logging and set
-        // it to debug to enable logging.
-        logLevel = "debug";
-    }
-    addConsoleLog("client", logLevel);
-
-    // Take different actions depending on command
-    switch (command[0]) {
-        case "search":
-            return search();
-
-        case "download":
-            return download();
-
-        case "default":
-            return Promise.reject("Unknown command.");
-    }
-}
-
 function download() {
     let url = command[1];
     if (!url) return Promise.reject("URL not given.");
 
     let ct = new Client({ incoming: options.incoming });
     let pb;
+    let downMap = {};
+    let totalSize = 0;
+
     return ct
-        .downloadFile(url, command[2], (downloaded, size) => {
-            if (!pb) {
+        .download(url, command[2], (downloaded, size, path, root) => {
+            if (pb) {
+                let delta = downMap[path] || 0;
+                delta = downloaded - delta;
+                downMap[path] = downloaded;
+
+                pb.increment(delta);
+            } else {
                 pb = new Progress.Bar(
                     {
                         format:
@@ -114,14 +126,27 @@ function download() {
                     },
                     Progress.Presets.shades_classic
                 );
-                pb.start(size, downloaded);
+                pb.start(size);
+                totalSize = size;
             }
-            pb.update(downloaded);
         })
         .then(path => {
+            pb.update(totalSize);
             pb.stop();
-            console.log(`\nFile downloaded to ${path}`);
+            console.log(`\nFile/Directory downloaded to ${path}`);
         });
+}
+
+function info() {
+    let url = command[1];
+    if (!url) return Promise.reject("URL not given.");
+
+    let ct = new Client({});
+
+    return ct.getMeta(url).then(meta => {
+        delete meta.id;
+        console.table(meta);
+    });
 }
 
 function main() {
