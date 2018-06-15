@@ -506,4 +506,44 @@ export default class Client {
             throw err;
         }
     }
+
+    // Wrapper around downloadDirectory and downloadFile. Uses meta data to
+    // call correct function
+    download(url, path, callback) {
+        if (!url) {
+            return Promise.reject("URL not passed.");
+        }
+
+        // URL for meta data
+        let metaUrl = `${url}/meta`;
+
+        return new Promise((resolve, reject) => {
+            http(metaUrl, res => {
+                let data = "";
+
+                if (res.headers["content-type"] !== "application/json")
+                    throw Error(`${metaUrl} does not correspond to meta data`);
+
+                res
+                    .on("data", chunk => {
+                        data += chunk;
+                    })
+                    .on("end", () => {
+                        try {
+                            resolve(JSON.parse(data));
+                        } catch (err) {
+                            reject("Corrupted response");
+                        }
+                    });
+            });
+        }).then(meta => {
+            if (meta.type == "dir") {
+                logger.debug(`Client.download: ${url} is directory`);
+                return this.downloadDirectory(url, path, callback);
+            } else {
+                logger.debug(`Client.download: ${url} is file`);
+                return this.downloadFile(url, path, callback);
+            }
+        });
+    }
 }
