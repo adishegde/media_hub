@@ -26,7 +26,7 @@ let readdir = Util.promisify(Fs.readdir);
  * - tags: Tags classifying the file or directory.
  * - type: File or Directory.
  * - path: Path to directory or file.
- * - size: Size of file or number of files in directory
+ * - size: Size of file or directory
  * - id: The uuid for corresponding to the path
 */
 
@@ -108,19 +108,20 @@ export default class MetaData {
         // Set downloads value to max of children if directory
         if (stat.isDirectory()) {
             type = "dir";
+            size = 0;
 
             let children = await readdir(path);
             children = children.map(child => Path.join(path, child));
 
-            let downloadsChildren = children.map(child => {
-                if (this.data[child]) return this.data[child].downloads;
-                return 0;
+            // Calculate size of directory and max downloads.
+            children.forEach(child => {
+                if (this.data[child]) {
+                    let chdownloads = this.data[child].downloads;
+                    downloads =
+                        downloads > chdownloads ? downloads : chdownloads;
+                    size += this.data[child].size;
+                }
             });
-
-            downloads = downloadsChildren.reduce(
-                (acc, val) => (acc > val ? acc : val),
-                0
-            );
         }
 
         // Update meta data

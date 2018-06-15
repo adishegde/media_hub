@@ -145,6 +145,7 @@ export default class HTTPService {
                 let response = {
                     id: req.path[0],
                     name: data.name,
+                    size: data.size,
                     children: listing
                 };
                 response = JSON.stringify(response, null, 0);
