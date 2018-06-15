@@ -514,9 +514,24 @@ export default class Client {
             return Promise.reject("URL not passed.");
         }
 
+        return this.getMeta(url).then(meta => {
+            if (meta.type == "dir") {
+                logger.debug(`Client.download: ${url} is directory`);
+                return this.downloadDirectory(url, path, callback);
+            } else {
+                logger.debug(`Client.download: ${url} is file`);
+                return this.downloadFile(url, path, callback);
+            }
+        });
+    }
+
+    getMeta(url) {
+        if (!url) {
+            return Promise.reject("URL not passed.");
+        }
+
         // URL for meta data
         let metaUrl = `${url}/meta`;
-
         return new Promise((resolve, reject) => {
             http(metaUrl, res => {
                 let data = "";
@@ -536,14 +551,6 @@ export default class Client {
                         }
                     });
             });
-        }).then(meta => {
-            if (meta.type == "dir") {
-                logger.debug(`Client.download: ${url} is directory`);
-                return this.downloadDirectory(url, path, callback);
-            } else {
-                logger.debug(`Client.download: ${url} is file`);
-                return this.downloadFile(url, path, callback);
-            }
         });
     }
 }
