@@ -172,7 +172,7 @@ export default class Client {
     //  given will be saved to incoming.
     //  - callback [optional]: Called when progress is updated. The bytes
     //  downloaded and file size will be passed as argument.
-    downloadFile(url, path, callback) {
+    async downloadFile(url, path, callback) {
         // If path is falsy then try incoming
         path = path || this.incoming;
 
@@ -189,103 +189,100 @@ export default class Client {
             logger.debug(
                 "Client.downloadFile: No valid incoming or path given."
             );
-            return Promise.reject("No valid incoming or path given.");
+            throw Error("No valid incoming or path given.");
         }
         if (!url) {
             logger.debug("Client.downloadFile: URL not given.");
-            return Promise.reject("URL not given.");
+            throw Error("URL not given.");
         }
 
         let pathIsDir = false;
 
-        // If path is directory
-        return fstat(path)
-            .then(
-                stat => {
-                    // if path is directory we are done
-                    if (stat.isDirectory()) {
-                        pathIsDir = true;
+        try {
+            // If path is directory
+            let stat = await fstat(path);
+
+            // if path is directory we are done
+            if (stat.isDirectory()) {
+                pathIsDir = true;
+            }
+        } catch (err) {
+            try {
+                // path does not exist. Maybe it's the final path of the new file.
+                // Check if parent directory exists.
+                if (err.code === "ENOENT") {
+                    // Promise is rejected if parent directory doesn't exist
+                    stat = await fstat(Path.dirname(path));
+
+                    // if parent directory exists then ok else throw Error
+                    if (!stat.isDirectory()) {
+                        logger.debug(
+                            "Client.downloadFile: Invalid path passed"
+                        );
+                        throw Error("Invalid path passed");
                     }
-                },
-                err => {
-                    // path does not exist. Maybe it's the final path of the new file.
-                    // Check if parent directory exists.
-                    if (err.code === "ENOENT") {
-                        // Promise is rejected if parent directory doesn't exist
-                        return fstat(Path.dirname(path)).then(stat => {
-                            // if parent directory exists then ok else reject
-                            // Promise
-                            if (!stat.isDirectory()) {
-                                logger.debug(
-                                    "Client.download: Invalid path passed"
-                                );
-                                throw Error("Invalid path passed");
-                            }
-                        });
-                    } else {
-                        // Reject promise if any other error
-                        throw err;
-                    }
+                } else {
+                    // If error is not ENOENT then rethrow
+                    logger.debug(`Client.downloadFile: ${err}`);
+                    throw err;
                 }
-            )
-            .catch(() => {
+            } catch (err) {
                 // In case of any error try and set path to incoming
                 if (!this.incoming) {
-                    // If incoming is falsy reject Promise
+                    // If incoming is throw Error
                     throw Error("No valid incoming nor path passed.");
                 }
                 path = this.incoming;
                 pathIsDir = true;
-            })
-            .then(() => {
-                // If everything is ok then continue to download
-                return new Promise((resolve, reject) => {
-                    // Parsed url acts as config for http request
-                    http(`http://${url}`, res => {
-                        if (pathIsDir) {
-                            let fileName = res.headers["content-disposition"];
-                            // Extract filename from header. Assumption is that the
-                            // header is exactly as returned by the http service.
-                            // Might throw errors for other headers
-                            fileName = fileName.replace(
-                                `inline; filename="`,
-                                ""
-                            );
-                            // Remove trailing double quote
-                            fileName = fileName.slice(0, fileName.length - 1);
+            }
+        }
 
-                            path = Path.join(path, fileName);
-                        }
+        try {
+            // Now path has been set
+            // Make request
+            return new Promise((resolve, reject) => {
+                http(`http://${url}`, res => {
+                    if (pathIsDir) {
+                        let fileName = res.headers["content-disposition"];
+                        // Extract filename from header. Assumption is that the
+                        // header is exactly as returned by the http service.
+                        // Might throw errors for other headers
+                        fileName = fileName.replace(`inline; filename="`, "");
+                        // Remove trailing double quote
+                        fileName = fileName.slice(0, fileName.length - 1);
 
-                        let fileSize = parseInt(
-                            res.headers["content-length"],
-                            10
-                        );
-                        let bytesDownloaded = 0;
+                        path = Path.join(path, fileName);
+                    }
 
+                    let fileSize = parseInt(res.headers["content-length"], 10);
+                    let bytesDownloaded = 0;
+
+                    callback(bytesDownloaded, fileSize);
+
+                    // If permission error occurs, error will be thrown here
+                    let downloadedFile = Fs.createWriteStream(path);
+                    // Write data
+                    res.pipe(downloadedFile);
+
+                    // Increase bytes downloaded for every chunk
+                    res.on("data", chunk => {
+                        bytesDownloaded += chunk.length;
                         callback(bytesDownloaded, fileSize);
+                    });
 
-                        // If permission error occurs, error will be thrown here
-                        let downloadedFile = Fs.createWriteStream(path);
-                        // Write data
-                        res.pipe(downloadedFile);
-
-                        // Increase bytes downloaded for every chunk
-                        res.on("data", chunk => {
-                            bytesDownloaded += chunk.length;
-                            callback(bytesDownloaded, fileSize);
-                        });
-
-                        res.on("end", () => {
-                            // Resolve promise if download is completed
-                            resolve(path);
-                        });
-                        res.on("error", err => {
-                            logger.debug(`Client.downloadFile: ${err}`);
-                            reject(err);
-                        });
+                    res.on("end", () => {
+                        // Resolve promise if download is completed
+                        resolve(path);
+                    });
+                    res.on("error", err => {
+                        logger.debug(`Client.downloadFile: ${err}`);
+                        reject(err);
                     });
                 });
             });
+        } catch (err) {
+            logger.debug(`Client.downloadFile: ${err}`);
+            throw err;
+        }
     }
 }
