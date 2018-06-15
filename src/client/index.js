@@ -134,7 +134,7 @@ function main() {
 
     // Execute given command
     run().catch(err => {
-        console.log(err);
+        console.log(`${err}`);
     });
 }
 

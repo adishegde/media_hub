@@ -171,7 +171,8 @@ export default class Client {
     //  - path [optional]: Path to save file. Can be name of file or directory. If not
     //  given will be saved to incoming.
     //  - callback [optional]: Called when progress is updated. The bytes
-    //  downloaded and file size will be passed as argument.
+    //  downloaded, file size and path where file is downloaded will be passed
+    //  as arguments.
     async downloadFile(url, path, callback) {
         // If path is falsy then try incoming
         path = path || this.incoming;
@@ -257,7 +258,7 @@ export default class Client {
                     let fileSize = parseInt(res.headers["content-length"], 10);
                     let bytesDownloaded = 0;
 
-                    callback(bytesDownloaded, fileSize);
+                    callback(bytesDownloaded, fileSize, path);
 
                     // If permission error occurs, error will be thrown here
                     let downloadedFile = Fs.createWriteStream(path);
@@ -267,7 +268,7 @@ export default class Client {
                     // Increase bytes downloaded for every chunk
                     res.on("data", chunk => {
                         bytesDownloaded += chunk.length;
-                        callback(bytesDownloaded, fileSize);
+                        callback(bytesDownloaded, fileSize, path);
                     });
 
                     res.on("end", () => {
