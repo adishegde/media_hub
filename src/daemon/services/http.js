@@ -134,12 +134,17 @@ export default class HTTPService {
                 children.forEach(child => {
                     if (this.metaData.hasFile(child)) {
                         let chdata = this.metaData.getData(child);
-                        listing.push({ name: chdata.name, id: chdata.id });
+                        listing.push({
+                            name: chdata.name,
+                            id: chdata.id,
+                            type: chdata.type
+                        });
                     }
                 });
 
                 let response = {
                     id: req.path[0],
+                    name: data.name,
                     children: listing
                 };
                 response = JSON.stringify(response, null, 0);
