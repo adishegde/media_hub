@@ -25,7 +25,7 @@ const mkdir = Util.promisify(Fs.mkdir);
 // exists.
 // All check done by Client member functions.
 // Params:
-//  - url: URL at which file is served. "http://" is prefixed to given URL.
+//  - url: URL at which file is served.
 //  - path: Path to which file should be saved. Can be directory or file path.
 //  - pathIsDir: True if path is a directory. In this case the name is set from
 //  response header.
@@ -33,8 +33,6 @@ const mkdir = Util.promisify(Fs.mkdir);
 //  arguments
 function _download(url, path, pathIsDir, callback) {
     return new Promise((resolve, reject) => {
-        url = `http://${url}`;
-
         let req = http(url);
         req
             .on("error", err => {
@@ -102,7 +100,7 @@ function _download(url, path, pathIsDir, callback) {
 async function _downloadDir(url, path, callback) {
     let res = await new Promise((resolve, reject) => {
         // extremely minimal error handling in case it is not directory URL
-        http(`http://${url}`, res => {
+        http(url, res => {
             let data = "";
 
             res
@@ -120,14 +118,14 @@ async function _downloadDir(url, path, callback) {
     });
 
     let childDownloadPromise = [];
-    let host = new URL(`http://${url}`).host;
+    let origin = new URL(url).origin;
 
     for (let child of res.children) {
         if (child.type === "file") {
             // If file download file
             childDownloadPromise.push(
                 _download(
-                    `${host}/${child.id}`,
+                    `${origin}/${child.id}`,
                     Path.join(path, child.name),
                     false,
                     callback
@@ -140,7 +138,7 @@ async function _downloadDir(url, path, callback) {
             childDownloadPromise.push(
                 mkdir(childPath).then(() => {
                     return _downloadDir(
-                        `${host}/${child.id}`,
+                        `${origin}/${child.id}`,
                         childPath,
                         callback
                     );
@@ -249,7 +247,7 @@ export default class Client {
                             response.search === request.search &&
                             response.param === request.param
                         ) {
-                            let url = `${rinf.address}:${this.httpPort}`;
+                            let url = `http://${rinf.address}:${this.httpPort}`;
 
                             // Add results to responseAcc
                             response.results.forEach(result => {
@@ -454,7 +452,7 @@ export default class Client {
             if (!url) throw Error("No url passed");
 
             let res = await new Promise((resolve, reject) => {
-                http(`http://${url}`, res => {
+                http(url, res => {
                     let data = "";
 
                     if (res.headers["content-type"] !== "application/json")
