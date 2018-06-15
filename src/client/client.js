@@ -393,7 +393,8 @@ export default class Client {
     //  - path [optional]: Path to save file. Can be name of file or directory. If not
     //  given will be saved to incoming.
     //  - callback [optional]: Called when progress is updated. The bytes
-    //  downloaded, file size and path where file is downloaded will be passed
+    //  downloaded, file size, path for which information is given and a boolean
+    //  value which is true if the path is that of the root directory is passed.
     //  as arguments.
     async downloadDirectory(url, path, callback) {
         let pathIsParent = false;
@@ -500,6 +501,13 @@ export default class Client {
 
             // path is now set properly
             await mkdir(path);
+
+            try {
+                // Call back for root directory
+                callback(0, res.size, path, true);
+            } catch (err) {
+                // ignore
+            }
 
             // Download directory
             await _downloadDir(url, path, callback);
