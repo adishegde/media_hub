@@ -20,7 +20,8 @@ const fstat = Util.promisify(Fs.stat);
 const fsaccess = Util.promisify(Fs.access);
 
 // Function that actually downloads file served at url to given path. No check
-// performed for path or callback to make it efficient.
+// performed for path or callback to make it efficient. Error if path already
+// exists.
 // All check done by Client member functions.
 // Params:
 //  - url: URL at which file is served. "http://" is prefixed to given URL.
@@ -31,43 +32,61 @@ const fsaccess = Util.promisify(Fs.access);
 //  arguments
 function _download(url, path, pathIsDir, callback) {
     return new Promise((resolve, reject) => {
-        http(`http://${url}`, res => {
-            if (pathIsDir) {
-                let fileName = res.headers["content-disposition"];
-                // Extract filename from header. Assumption is that the
-                // header is exactly as returned by the http service.
-                // Might throw errors for other headers
-                fileName = fileName.replace(`inline; filename="`, "");
-                // Remove trailing double quote
-                fileName = fileName.slice(0, fileName.length - 1);
+        url = `http://${url}`;
 
-                path = Path.join(path, fileName);
-            }
-
-            let fileSize = parseInt(res.headers["content-length"], 10);
-            let bytesDownloaded = 0;
-
-            callback(bytesDownloaded, fileSize, path);
-
-            // If permission error occurs, error will be thrown here
-            let downloadedFile = Fs.createWriteStream(path);
-            // Write data
-            res.pipe(downloadedFile);
-
-            // Increase bytes downloaded for every chunk
-            res.on("data", chunk => {
-                bytesDownloaded += chunk.length;
-                callback(bytesDownloaded, fileSize, path);
-            });
-
-            res.on("end", () => {
-                // Resolve promise if download is completed
-                resolve(path);
-            });
-            res.on("error", err => {
+        let req = http(url);
+        req
+            .on("error", err => {
+                // On request error
                 reject(err);
+            })
+            .on("response", res => {
+                if (pathIsDir) {
+                    let fileName = res.headers["content-disposition"];
+                    // Extract filename from header. Assumption is that the
+                    // header is exactly as returned by the http service.
+                    // Might throw errors for other headers
+                    fileName = fileName.replace(`inline; filename="`, "");
+                    // Remove trailing double quote
+                    fileName = fileName.slice(0, fileName.length - 1);
+
+                    path = Path.join(path, fileName);
+                }
+
+                let fileSize = parseInt(res.headers["content-length"], 10);
+                let bytesDownloaded = 0;
+
+                // Do no overwrite existing file
+                let downloadedFile = Fs.createWriteStream(path, {
+                    flags: "wx"
+                });
+
+                // If file exists or some unexpected error
+                downloadedFile
+                    .on("error", err => {
+                        // Abort HTTP request and unpipe response
+                        req.abort();
+                        res.unpipe(downloadedFile);
+                        if (err.code === "EEXIST")
+                            reject(`${path} already exsits`);
+                        else reject(err);
+                    })
+                    .on("open", err => {
+                        // add event handlers to res only after file has been
+                        // successfully opened. This ensures that callback is
+                        // called only if writeStream opened successfully
+                        res.on("data", chunk => {
+                            bytesDownloaded += chunk.length;
+                            callback(bytesDownloaded, fileSize, path);
+                        });
+                    })
+                    .on("finish", () => {
+                        resolve(path);
+                    });
+
+                // Pipe data
+                res.pipe(downloadedFile);
             });
-        });
     });
 }
 
@@ -233,9 +252,12 @@ export default class Client {
             try {
                 let stat = await fstat(path);
 
-                // if path exists we are done
+                // if path is directory we are done
                 if (stat.isDirectory()) {
                     pathIsDir = true;
+                } else if (stat.isFile()) {
+                    // If a file exists at path then thow Error
+                    throw Error(`File exists at ${path}`);
                 }
             } catch (err) {
                 try {
