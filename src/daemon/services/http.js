@@ -31,10 +31,10 @@ export default class HTTPService {
         this.server = Http.createServer(this.rootHandler.bind(this));
         this.server
             .on("clientError", (err, socket) => {
-                logger.error(`HTTPService: clientError`);
+                logger.info(`HTTPService: clientError`);
                 logger.debug(`HTTPService: ${err.stack}`);
 
-                logger.info(`HTTPService: Closing socket`);
+                logger.debug(`HTTPService: Closing socket`);
                 socket.end("HTTP/1.1 400 Bad Request\r\n\r\n");
             })
             .on("listening", () => {
