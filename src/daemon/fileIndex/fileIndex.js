@@ -154,8 +154,8 @@ export default class FileIndex {
     // Params:
     // - metaData: Object of class MetaData.
     // - An object having properties:
-    //   - dirs: Array of dirs that should be indexed. Only directories are
-    // indexed.
+    //   - share: Array of dirs that should be indexed. Assumes that only
+    //   directories are passed. May result in unexpected error otherwise.
     //   - pollingInterval [optional]: The interval between each indexing in milli seconds
     constructor(
         metaData,
@@ -178,35 +178,12 @@ export default class FileIndex {
             );
         }
 
-        // Filter out directories from array of paths
-        this.dirs = dirs.filter(path => {
-            try {
-                // Synchronous since this is initialization
-                // Initial setup should be completed before accetpting requests
-                let stat = Fs.statSync(path);
-                if (!stat.isDirectory()) {
-                    logger.error(
-                        `${path} will not be indexed since it is not a directory.`
-                    );
-
-                    return false;
-                }
-            } catch (error) {
-                // If error is thrown then dir at path does not exist
-                logger.error(
-                    `${path} will not be indexed since it does not exist.`
-                );
-                return false;
-            }
-
-            return true;
-        });
-
         // Bind methods to avoid unexpected binding errors
         this.start = this.start.bind(this);
         this.stop = this.stop.bind(this);
         this.index = this.index.bind(this);
 
+        this.dirs = dirs;
         this.interval = pollingInterval;
         this.meta = metaData;
 
