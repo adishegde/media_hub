@@ -159,7 +159,7 @@ export default class FileIndex {
     //   - pollingInterval [optional]: The interval between each indexing in milli seconds
     constructor(
         metaData,
-        { shared: dirs, pollingInterval = DEFAULT.pollingInterval }
+        { share: dirs, pollingInterval = DEFAULT.pollingInterval }
     ) {
         logger.info("Initializing FileIndex...");
 

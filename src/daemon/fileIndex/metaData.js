@@ -33,10 +33,10 @@ let readdir = Util.promisify(Fs.readdir);
 export default class MetaData {
     // Params
     // - An object having params:
-    //   - dbPath [optional]: Path to database (json file)
+    //   - db [optional]: Path to database (json file)
     //   - writeInterval [optional]: Interval between consecutive writes
     constructor({
-        dbPath = DEFAULT.dbPath,
+        db: dbPath = DEFAULT.db,
         dbWriteInterval = DEFAULT.dbWriteInterval
     }) {
         this.dbPath = dbPath;

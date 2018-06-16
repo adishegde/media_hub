@@ -4,25 +4,10 @@
 // Base uuid for namespace
 const UUID_NAMESPACE = "4b94ccfc-ea76-47e0-b5f3-e2b4b4b23728";
 
-// Config options
-const CONFIGKEYS = [
-    "udpPort",
-    "httpPort",
-    "network",
-    "shared",
-    "pollingInterval",
-    "dbPath",
-    "dbwriteInterval",
-    "maxResults",
-    "log",
-    "errorLog",
-    "logLevel"
-];
-
 const DEFAULT_SERVER = {
     pollingInterval: 4000,
     dbWriteInterval: 10000,
-    dbPath: "./meta.json",
+    db: "./meta.json",
     maxResults: 10
 };
 
@@ -40,7 +25,6 @@ const DEFAULT_CLIENT = {
 
 export {
     UUID_NAMESPACE,
-    CONFIGKEYS,
     DEFAULT_SERVER,
     DEFAULT_NETWORK,
     DEFAULT_HTTP_PORT,
