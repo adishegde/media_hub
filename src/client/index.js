@@ -1,53 +1,162 @@
-import clargsParser from "minimist";
+import Program from "commander";
 import * as Ps from "process";
 import Winston from "winston";
 import Progress from "cli-progress";
 
 import Client from "./client";
-import { addLogFile, addConsoleLog } from "../utils/log";
+import { addConsoleLog } from "../utils/log";
 
-const logger = Winston.loggers.get("client");
+Program.version("1.0")
+    .usage("[options] <command> [<args>]")
+    .option(
+        "-p, --clientPort <port>",
+        "Client port for UDP broadcast.",
+        parseInt
+    )
+    .option("-u, --udpPort <port>", "Server UDP port.", parseInt)
+    .option("-h, --httpPort <port>", "Server HTTP port.", parseInt)
+    .option(
+        "-n, --network <name>",
+        "Name of network to which request will be made."
+    )
+    .option(
+        "-b, --broadcastIp <name>",
+        "Broadcast IP address for UDP search requests."
+    )
+    .option(
+        "-t, --timeout <time>",
+        "Time to wait for UDP broadcast responses.",
+        parseInt
+    )
+    .option("-i, --incoming <path>", "Default download directory.")
+    .option("-d, --debug", "Enable debug messages.");
 
-const CLIENTOPTS = [
-    "clientPort",
-    "udpPort",
-    "httpPort",
-    "network",
-    "broadcastIp",
-    "timeout",
-    "incoming"
-];
+Program.command("search <query> [param]")
+    .description(
+        "Search for files having [param] matching <query>. [param] can be tags/name. Default matches both."
+    )
+    .action((query, param) => {
+        let options = setup();
 
-const options = {};
-let command;
+        const ct = new Client(options);
+        console.log(
+            `Searching for files with ${param ||
+                "names and tags"} as "${query}"\n`
+        );
 
-function commandLineOptions() {
-    let cargs = clargsParser(Ps.argv.slice(2));
-
-    if (cargs["config"]) {
-        let configHandler = new Config(cargs["config"]);
-        CLIENTOPTS.forEach(key => {
-            if (configHandler[key]) options[key] = configHandler[key];
-        });
-    }
-
-    CLIENTOPTS.forEach(key => {
-        if (cargs[key]) options[key] = cargs[key];
+        // Display results
+        ct
+            .search(query, param)
+            .then(data => {
+                if (data.length === 0) {
+                    console.log("No results found.");
+                } else {
+                    let disp = [];
+                    // Add rows to table. With capitalized columns
+                    data.forEach(res => {
+                        disp.push({
+                            Name: res.name,
+                            URL: res.url
+                        });
+                    });
+                    console.table(disp);
+                }
+            })
+            .catch(err => {
+                console.log(`${err}`);
+            });
     });
 
-    // debug enables logging. Checked for seperately since it isn't passed to
-    // client instance
-    if (cargs.debug) options.debug = cargs.debug;
+Program.command("download <url> [path]")
+    .description(
+        "Download file/directory at <url> to [path]. Defaults to --incoming."
+    )
+    .action((url, path) => {
+        let options = setup();
 
-    // Extract non keyargs to command
-    command = cargs._;
-}
+        let ct = new Client(options);
+        let pb;
+        let downMap = {};
+        let totalSize = 0;
 
-// Returns promise for executed command
-function run() {
-    // Add console transport
+        return ct
+            .download(url, path, (downloaded, size, path, root) => {
+                if (pb) {
+                    let delta = downMap[path] || 0;
+                    delta = downloaded - delta;
+                    downMap[path] = downloaded;
+
+                    pb.increment(delta);
+                } else {
+                    pb = new Progress.Bar(
+                        {
+                            format:
+                                "Downloading: [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} bytes"
+                        },
+                        Progress.Presets.shades_classic
+                    );
+                    pb.start(size);
+                    totalSize = size;
+                }
+            })
+            .then(path => {
+                pb.update(totalSize);
+                pb.stop();
+                console.log(`\nFile/Directory downloaded to ${path}`);
+            })
+            .catch(err => {
+                console.log(`${err}`);
+            });
+    });
+
+Program.command("info <url>")
+    .description("Get meta data of file/directory at <url>.")
+    .action(url => {
+        let options = setup();
+
+        let ct = new Client(options);
+
+        return ct
+            .getMeta(url)
+            .then(meta => {
+                delete meta.id;
+                console.table(meta);
+            })
+            .catch(err => {
+                console.log(`${err}`);
+            });
+    });
+
+Program.command("list <url>")
+    .description("List contents of directory at <url>.")
+    .action(url => {
+        let options = setup();
+
+        let ct = new Client(options);
+        return ct
+            .getDirectoryInfo(url)
+            .then(data => {
+                let table = {};
+
+                data.children.forEach(child => {
+                    table[child.name] = {
+                        URL: child.url,
+                        Type: child.type
+                    };
+                });
+
+                console.table(table);
+            })
+            .catch(err => {
+                console.log(`${err}`);
+            });
+    });
+
+// Sets up app based on cli options
+// Returns client options
+function setup() {
     let logLevel = "error";
-    if (options.debug) {
+    if (Program.debug) {
         // This is a small hack. There is no logging of level above debug in
         // Client class. Thus we set to error level to disable logging and set
         // it to debug to enable logging.
@@ -55,180 +164,26 @@ function run() {
     }
     addConsoleLog("client", logLevel);
 
-    // Take different actions depending on command
-    switch (command[0]) {
-        case "search":
-            return search();
+    // Extrack necessary properties
+    let {
+        clientPort,
+        udpPort,
+        httpPort,
+        network,
+        broadcastIp,
+        timeout,
+        incoming
+    } = Program;
 
-        case "download":
-            return download();
-
-        case "info":
-            return info();
-
-        case "list":
-            return list();
-
-        case "usage":
-            return usage();
-
-        default:
-            console.log("Unknown command.\n");
-            return usage();
-    }
-}
-
-function search() {
-    // Check if search string is provided
-    if (!command[1]) Promise.reject("No search string provided.");
-
-    const ct = new Client(options);
-    console.log(
-        `Searching for files with ${command[2] || "names and tags"} as "${
-            command[1]
-        }"\n`
-    );
-
-    // Display results
-    // command[2] denotes the param
-    return ct.search(command[1], command[2]).then(data => {
-        if (data.length === 0) {
-            console.log("No results found.");
-        } else {
-            let disp = [];
-            // Add rows to table. With capitalized columns
-            data.forEach(res => {
-                disp.push({
-                    Name: res.name,
-                    URL: res.url
-                });
-            });
-            console.table(disp);
-        }
-    });
-}
-
-function download() {
-    let url = command[1];
-    if (!url) return Promise.reject("URL not given.");
-
-    let ct = new Client({ incoming: options.incoming });
-    let pb;
-    let downMap = {};
-    let totalSize = 0;
-
-    return ct
-        .download(url, command[2], (downloaded, size, path, root) => {
-            if (pb) {
-                let delta = downMap[path] || 0;
-                delta = downloaded - delta;
-                downMap[path] = downloaded;
-
-                pb.increment(delta);
-            } else {
-                pb = new Progress.Bar(
-                    {
-                        format:
-                            "Downloading: [{bar}] {percentage}% | ETA: {eta}s | {value}/{total} bytes"
-                    },
-                    Progress.Presets.shades_classic
-                );
-                pb.start(size);
-                totalSize = size;
-            }
-        })
-        .then(path => {
-            pb.update(totalSize);
-            pb.stop();
-            console.log(`\nFile/Directory downloaded to ${path}`);
-        });
-}
-
-function info() {
-    let url = command[1];
-    if (!url) return Promise.reject("URL not given.");
-
-    let ct = new Client({});
-
-    return ct.getMeta(url).then(meta => {
-        delete meta.id;
-        console.table(meta);
-    });
-}
-
-function list() {
-    let url = command[1];
-    if (!url) return Promise.reject("URL not given.");
-
-    let ct = new Client({});
-    return ct.getDirectoryInfo(url).then(data => {
-        let table = {};
-
-        data.children.forEach(child => {
-            table[child.name] = {
-                URL: child.url,
-                Type: child.type
-            };
-        });
-
-        console.table(table);
-    });
-}
-
-function usage() {
-    const usageInfo = {
-        search: {
-            command: "search <search string> [param]",
-            description:
-                "Search for files having names and tags 'param' as <search string>. Default match param and tag"
-        },
-        download: {
-            command: "download <url> [dpath]",
-            description:
-                "Download file or directory to 'dpath' where 'dpath' can be new directory/file name or parent directory's name"
-        },
-        info: {
-            command: "info <url>",
-            description: "View meta information about file or directory."
-        },
-        list: {
-            command: "list <url>",
-            description: "View subfiles of a directory."
-        },
-        usage: {
-            command: "usage",
-            description: "View this message."
-        },
-        options: {
-            command: "--<option>",
-            description:
-                "Options given to command.\n - clientPort: Port for making UDP requests on client (default 31342).\n - udpPort: Server's UDP port to which client should make a request (default 31340).\n - httpPort: Server's HTTP port to which client should make a request (default 31340).\n - network: The network to which request should be made (default 'Media_Hub').\n - broadcastIp: The broadcast IP address (default '255.255.255.255')\n - timeout: Time to wait for UDP responses (default 3000ms)\n - incoming: Default directory for downloads.\n - debug: Enable detailed logging.\n - config: JSON file which can contain any of the above properties."
-        }
+    return {
+        clientPort,
+        udpPort,
+        httpPort,
+        network,
+        broadcastIp,
+        timeout,
+        incoming
     };
-
-    console.log("Usage:");
-    for (let opt of Object.keys(usageInfo)) {
-        console.log(usageInfo[opt].command);
-        console.log(usageInfo[opt].description);
-        console.log("\n");
-    }
-
-    return Promise.resolve();
 }
 
-function main() {
-    try {
-        // Parse cl options
-        commandLineOptions();
-    } catch (err) {
-        console.log(err);
-    }
-
-    // Execute given command
-    run().catch(err => {
-        console.log(`${err}`);
-        logger.debug(`Media_Hub.Client: ${err.stack}`);
-    });
-}
-
-main();
+Program.parse(process.argv);
