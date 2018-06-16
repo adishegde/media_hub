@@ -14,19 +14,37 @@ const logger = Winston.loggers.get("daemon");
 const readdir = Util.promisify(Fs.readdir);
 const fstat = Util.promisify(Fs.stat);
 
+function isChild(path, dirList) {
+    return dirList.some(dir => {
+        let relative = Path.relative(dir, path);
+
+        return (
+            !!relative &&
+            !relative.startsWith("..") &&
+            !Path.isAbsolute(relative)
+        );
+    });
+}
+
 export default class HTTPService {
     // Params:
     //  - metaData: An object of class MetaData.
     //  - A config object of having properties:
     //    - port [optional]: Port on which HTTP service should run
-    constructor(metaData, { httpPort: port = DEFAULT_HTTP_PORT }) {
+    //    - share: List of shared directories.
+    constructor(metaData, { httpPort: port = DEFAULT_HTTP_PORT, share }) {
         if (!metaData) {
             logger.error("MetaData object not passed to HTTPService.");
             throw Error("MetaData object not passed to HTTPService.");
         }
+        if (!share) {
+            logger.error("HTTPService: share not passed.");
+            throw Error("Share not passed to HTTPService.");
+        }
 
         this.metaData = metaData;
         this.port = port;
+        this.share = share;
 
         this.server = Http.createServer(this.rootHandler.bind(this));
         this.server
@@ -85,12 +103,12 @@ export default class HTTPService {
             }
         } catch (err) {
             if (err.code === 404) {
-                res.statusCode = 404;
-                res.statusMessage = err.toString();
+                logger.debug(`HTTPService: ${err}`);
+                res.writeHead(404, err.toString());
             } else {
                 logger.error(`HTTPService: ${err}`);
                 logger.debug(`HTTPService: ${err.stack}`);
-                res.statusCode = 500;
+                res.writeHead(500);
             }
             res.end();
         }
@@ -212,8 +230,13 @@ export default class HTTPService {
             throw x;
         }
 
+        let reqPath = this.metaData.getPathFromId(req.path[0]);
+
         // Check if file with id exists in db
-        if (!this.metaData.getPathFromId(req.path[0])) {
+        // If it exists then check if path is descendent of any shared
+        // directory. If not then throw error. This is just an extra check to
+        // ensure file is not served in case meta data has extra paths.
+        if (!reqPath || !isChild(reqPath, this.share)) {
             let x = new Error("Resource not found");
             x.code = 404;
             throw x;
