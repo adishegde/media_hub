@@ -5,28 +5,48 @@ import Progress from "cli-progress";
 
 import Client from "./client";
 import { addConsoleLog } from "../utils/log";
+import {
+    DEFAULT_CLIENT as DEFAULT,
+    DEFAULT_NETWORK,
+    DEFAULT_HTTP_PORT,
+    DEFAULT_UDP_PORT
+} from "../utils/constants";
 
 Program.version("1.0")
     .usage("[options] <command> [<args>]")
     .option(
         "-p, --clientPort <port>",
         "Client port for UDP broadcast.",
-        parseInt
+        val => parseInt(val),
+        DEFAULT.port
     )
-    .option("-u, --udpPort <port>", "Server UDP port.", parseInt)
-    .option("-h, --httpPort <port>", "Server HTTP port.", parseInt)
+    .option(
+        "-u, --udpPort <port>",
+        "Server UDP port.",
+        val => parseInt(val),
+        DEFAULT_UDP_PORT
+    )
+    .option(
+        "-h, --httpPort <port>",
+        "Server HTTP port.",
+        val => parseInd(val),
+        DEFAULT_HTTP_PORT
+    )
     .option(
         "-n, --network <name>",
-        "Name of network to which request will be made."
+        "Name of network to which request will be made.",
+        DEFAULT_NETWORK
     )
     .option(
         "-b, --broadcastIp <name>",
-        "Broadcast IP address for UDP search requests."
+        "Broadcast IP address for UDP search requests.",
+        DEFAULT.broadcastIp
     )
     .option(
         "-t, --timeout <time>",
-        "Time to wait for UDP broadcast responses.",
-        parseInt
+        "Time to wait for UDP broadcast responses in milliseconds.",
+        val => parseInt(val),
+        DEFAULT.timeout
     )
     .option("-i, --incoming <path>", "Default download directory.")
     .option("-d, --debug", "Enable debug messages.");
