@@ -66,6 +66,9 @@ function _download(url, path, pathIsDir, callback) {
                         // Abort HTTP request and unpipe response
                         req.abort();
                         res.unpipe(downloadedFile);
+
+                        logger.debug(`_download: ${err}`);
+
                         if (err.code === "EEXIST")
                             reject(`${path} already exsits`);
                         else reject(err);
@@ -81,15 +84,16 @@ function _download(url, path, pathIsDir, callback) {
                                 callback(bytesDownloaded, fileSize, path);
                             } catch (err) {
                                 logger.debug(`_download: ${err}`);
+                                logger.debug(`_download: ${err.stack}`);
                             }
                         });
+
+                        // Pipe data
+                        res.pipe(downloadedFile);
                     })
                     .on("finish", () => {
                         resolve(path);
                     });
-
-                // Pipe data
-                res.pipe(downloadedFile);
             });
     });
 }

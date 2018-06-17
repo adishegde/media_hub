@@ -12,6 +12,8 @@ import {
     DEFAULT_UDP_PORT
 } from "../utils/constants";
 
+const logger = Winston.loggers.get("client");
+
 Program.version("1.0")
     .usage("[options] <command> [<args>]")
     .option(
@@ -84,6 +86,7 @@ Program.command("search <query> [param]")
             })
             .catch(err => {
                 console.log(`${err}`);
+                logger.debug(`index.js: ${err.stack}`);
             });
     });
 
@@ -126,6 +129,7 @@ Program.command("download <url> [path]")
             })
             .catch(err => {
                 console.log(`${err}`);
+                logger.debug(`index.js: ${err.stack}`);
             });
     });
 
@@ -144,6 +148,7 @@ Program.command("info <url>")
             })
             .catch(err => {
                 console.log(`${err}`);
+                logger.debug(`index.js: ${err.stack}`);
             });
     });
 
@@ -169,6 +174,7 @@ Program.command("list <url>")
             })
             .catch(err => {
                 console.log(`${err}`);
+                logger.debug(`index.js: ${err.stack}`);
             });
     });
 
