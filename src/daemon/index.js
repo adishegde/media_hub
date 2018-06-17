@@ -18,7 +18,7 @@ const logger = Winston.loggers.get("daemon");
 // Shared directories through cli. Paths pushed via Program.options
 const share = [];
 
-Program.version("1.0")
+Program.version("0.1.0")
     .usage("[options]")
     .option(
         "-u, --udpPort <port>",
