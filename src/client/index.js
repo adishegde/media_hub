@@ -2,6 +2,7 @@ import Program from "commander";
 import * as Ps from "process";
 import Winston from "winston";
 import Progress from "cli-progress";
+import Table from "cli-table";
 
 import Client from "./client";
 import { addConsoleLog } from "../utils/log";
@@ -73,15 +74,15 @@ Program.command("search <query> [param]")
                 if (data.length === 0) {
                     console.log("No results found.");
                 } else {
-                    let disp = [];
+                    let table = new Table({
+                        head: ["Name", "URL"]
+                    });
+
                     // Add rows to table. With capitalized columns
                     data.forEach(res => {
-                        disp.push({
-                            Name: res.name,
-                            URL: res.url
-                        });
+                        table.push([res.name, res.url]);
                     });
-                    console.table(disp);
+                    console.log(table.toString());
                 }
             })
             .catch(err => {
@@ -143,8 +144,20 @@ Program.command("info <url>")
         return ct
             .getMeta(url)
             .then(meta => {
-                delete meta.id;
-                console.table(meta);
+                let table = new Table();
+
+                if (meta.tags.length === 0) meta.tags = "-";
+
+                table.push(
+                    { Name: meta.name },
+                    { Type: meta.type },
+                    { Tags: meta.tags },
+                    { Downloads: meta.downloads },
+                    { Description: meta.description || "-" },
+                    { Size: meta.size }
+                );
+
+                console.log(table.toString());
             })
             .catch(err => {
                 console.log(`${err}`);
@@ -161,16 +174,17 @@ Program.command("list <url>")
         return ct
             .getDirectoryInfo(url)
             .then(data => {
-                let table = {};
-
-                data.children.forEach(child => {
-                    table[child.name] = {
-                        URL: child.url,
-                        Type: child.type
-                    };
+                let table = new Table({
+                    head: ["", "Type", "URL"]
                 });
 
-                console.table(table);
+                data.children.forEach(child => {
+                    table.push({
+                        [child.name]: [child.url, child.type]
+                    });
+                });
+
+                console.log(table.toString());
             })
             .catch(err => {
                 console.log(`${err}`);

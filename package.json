@@ -21,6 +21,7 @@
     "description": "Tool for sharing files over LAN",
     "dependencies": {
         "cli-progress": "^2.0.0",
+        "cli-table": "^0.3.1",
         "commander": "^2.15.1",
         "fuse.js": "^3.2.0",
         "mime-types": "^2.1.18",
