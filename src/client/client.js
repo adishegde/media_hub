@@ -40,6 +40,18 @@ function _download(url, path, pathIsDir, callback) {
                 reject(err);
             })
             .on("response", res => {
+                if (res.statusCode !== 200) {
+                    logger.debug(
+                        `_download: Server responded with ${res.statusCode}: ${
+                            res.statusMessage
+                        }`
+                    );
+                    reject(
+                        `Server responded with ${res.statusCode}: ${
+                            res.statusMessage
+                        }`
+                    );
+                }
                 if (pathIsDir) {
                     let fileName = res.headers["content-disposition"];
                     // Extract filename from header. Assumption is that the
@@ -111,6 +123,19 @@ async function _downloadDir(url, path, callback) {
         // extremely minimal error handling in case it is not directory URL
         http(url, res => {
             let data = "";
+
+            if (res.statusCode !== 200) {
+                logger.debug(
+                    `_downloadDir: Server responded with ${res.statusCode}: ${
+                        res.statusMessage
+                    }`
+                );
+                reject(
+                    `Server responded with ${res.statusCode}: ${
+                        res.statusMessage
+                    }`
+                );
+            }
 
             res
                 .on("data", chunk => {
@@ -465,6 +490,19 @@ export default class Client {
                 http(url, res => {
                     let data = "";
 
+                    if (res.statusCode !== 200) {
+                        logger.debug(
+                            `downloadDirectory: Server responded with ${
+                                res.statusCode
+                            }: ${res.statusMessage}`
+                        );
+                        reject(
+                            `Server responded with ${res.statusCode}: ${
+                                res.statusMessage
+                            }`
+                        );
+                    }
+
                     if (res.headers["content-type"] !== "application/json")
                         throw Error("URL does not correspond to directory");
 
@@ -553,8 +591,21 @@ export default class Client {
             http(metaUrl, res => {
                 let data = "";
 
+                if (res.statusCode !== 200) {
+                    logger.debug(
+                        `getMeta: Server responded with ${res.statusCode}: ${
+                            res.statusMessage
+                        }`
+                    );
+                    reject(
+                        `Server responded with ${res.statusCode}: ${
+                            res.statusMessage
+                        }`
+                    );
+                }
+
                 if (res.headers["content-type"] !== "application/json")
-                    throw Error(`${metaUrl} does not correspond to meta data`);
+                    reject(`${metaUrl} does not correspond to meta data`);
 
                 res
                     .on("data", chunk => {
@@ -580,8 +631,21 @@ export default class Client {
             http(url, res => {
                 let data = "";
 
+                if (res.statusCode !== 200) {
+                    logger.debug(
+                        `getDirectoryInfo: Server responded with ${
+                            res.statusCode
+                        }: ${res.statusMessage}`
+                    );
+                    reject(
+                        `Server responded with ${res.statusCode}: ${
+                            res.statusMessage
+                        }`
+                    );
+                }
+
                 if (res.headers["content-type"] !== "application/json")
-                    throw Error("URL does not correspond to directory");
+                    reject("URL does not correspond to directory");
 
                 res
                     .on("data", chunk => {
