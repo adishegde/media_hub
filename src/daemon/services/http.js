@@ -189,7 +189,7 @@ export default class HTTPService {
             res.writeHead(206, {
                 "Content-Range": `bytes ${start}-${end}/${data.size}`,
                 "Accept-Ranges": "bytes",
-                "Content-Length": chunksize,
+                "Content-Length": `${chunksize}`,
                 "Content-Type": Mime.lookup(path) || "application/octet-stream"
             });
             fileStream.pipe(res);
@@ -197,7 +197,7 @@ export default class HTTPService {
             // Serve entire file if no range specified
             res.writeHead(200, {
                 "Content-Type": Mime.lookup(path) || "application/octet-stream",
-                "Content-Length": data.size,
+                "Content-Length": `${data.size}`,
                 "Content-Disposition": `inline; filename="${data.name}"`
             });
 
