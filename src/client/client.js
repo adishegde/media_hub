@@ -148,6 +148,10 @@ async function _downloadDir(url, path, callback) {
                         reject("Corrupted response");
                     }
                 });
+        }).on("error", err => {
+            // Error on request object, returned by http
+            logger.debug(`Client._downloadDir: ${err}`);
+            reject("Error connecting to server.");
         });
     });
 
@@ -517,6 +521,10 @@ export default class Client {
                                 reject("Corrupted response");
                             }
                         });
+                }).on("error", err => {
+                    // Error on request object, returned by http
+                    logger.debug(`Client.downloadDirectory: ${err}`);
+                    reject("Error connecting to server.");
                 });
             });
 
@@ -618,6 +626,10 @@ export default class Client {
                             reject("Corrupted response");
                         }
                     });
+            }).on("error", err => {
+                // Error on request object, returned by http
+                logger.debug(`Client.getMeta: ${err}`);
+                reject("Error connecting to server.");
             });
         });
     }
@@ -658,6 +670,10 @@ export default class Client {
                             reject("Corrupted response");
                         }
                     });
+            }).on("error", err => {
+                // Error on request object, returned by http
+                logger.debug(`Client.getDirectoryInfo: ${err}`);
+                reject("Error connecting to server.");
             });
         }).then(data => {
             if (!data.children)
