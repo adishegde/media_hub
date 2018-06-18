@@ -73,7 +73,7 @@ downloaded inside `path` with the same name as that in the server. The
 `--incoming` option should always be a directory. Use the `--help` option to
 view more details. e.g. of download command:
 
-    `./client http://192.168.0.2:31340/2f162dc4-ea49-50c3-b6bf-09db3f4ebd98 /path/to/download/file`
+    `./client download http://192.168.0.2:31340/2f162dc4-ea49-50c3-b6bf-09db3f4ebd98 /path/to/download/file`
 
 *   **info**: This displays the metadata associated with the URL. Use the `--help` to
 view more details. e.g.
