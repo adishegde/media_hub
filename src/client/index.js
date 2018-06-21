@@ -134,6 +134,21 @@ Program.command("download <url> [path]")
             });
     });
 
+// Takes size in bytes and returns string with right units to make it more
+// readable
+function formatBytes(bytes) {
+    let suf = ["B", "KB", "MB", "GB", "TB", "PB", "EB"];
+
+    if (bytes === 0) {
+        return `0 ${suf[0]}`;
+    }
+
+    let place = Math.floor(Math.log2(bytes) / 10);
+    let num = (bytes / Math.pow(1024, place)).toFixed(2);
+
+    return `${num} ${suf[place]}`;
+}
+
 Program.command("info <url>")
     .description("Get meta data of file/directory at <url>.")
     .action(url => {
@@ -154,7 +169,7 @@ Program.command("info <url>")
                     { Tags: meta.tags },
                     { Downloads: meta.downloads },
                     { Description: meta.description || "-" },
-                    { Size: meta.size }
+                    { Size: formatBytes(meta.size) }
                 );
 
                 console.log(table.toString());
