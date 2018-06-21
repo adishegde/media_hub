@@ -71,7 +71,7 @@ export default class MetaData {
 
         // Bind methods to avoid unexpected binding errors
         this.getData = this.getData.bind(this);
-        this.incrementDownload = this.incrementDownload.bind(this);
+        this.updateDownload = this.updateDownload.bind(this);
         this.remove = this.remove.bind(this);
         this.update = this.update.bind(this);
         this.write = this.write.bind(this);
@@ -158,11 +158,12 @@ export default class MetaData {
         return this.data.hasOwnProperty(path);
     }
 
-    // Increase downloads by 1 for path
+    // Increase downloads by delta for path
     // Params:
     // - path: Path for which downloads has to be increased.
-    incrementDownload(path) {
-        this.data[path].downloads += 1;
+    // - delta [optional]: Amount by which to increase download. Default is 1.
+    updateDownload(path, delta = 1) {
+        this.data[path].downloads += delta;
         this.write();
     }
 

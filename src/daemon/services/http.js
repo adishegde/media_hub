@@ -52,7 +52,6 @@ export default class HTTPService {
                 logger.info(`HTTPService: clientError`);
                 logger.debug(`HTTPService: ${err.stack}`);
 
-                logger.debug(`HTTPService: Closing socket`);
                 socket.end("HTTP/1.1 400 Bad Request\r\n\r\n");
             })
             .on("listening", () => {
@@ -194,6 +193,19 @@ export default class HTTPService {
             });
             fileStream.pipe(res);
         } else {
+            // Increment download
+            this.metaData.updateDownload(path);
+
+            // If request is for entire file and request is aborted, download is
+            // not incremented.
+            req.on("aborted", () => {
+                logger.debug(
+                    `HTTPService.fileRequestHandler: ${path} requested aborted.`
+                );
+                // Decrement download. No change since it was incremented before
+                this.metaData.updateDownload(path, -1);
+            });
+
             // Serve entire file if no range specified
             res.writeHead(200, {
                 "Content-Type": Mime.lookup(path) || "application/octet-stream",
@@ -204,9 +216,6 @@ export default class HTTPService {
             let fileStream = Fs.createReadStream(path);
             fileStream.pipe(res);
         }
-
-        // Increment download
-        this.metaData.incrementDownload(path);
     }
 
     // Validates URL
