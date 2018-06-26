@@ -4,14 +4,14 @@ import Winston from "winston";
 import Progress from "cli-progress";
 import Table from "cli-table";
 
-import Client from "./client";
-import { addConsoleLog } from "../utils/log";
+import Client from "../core/client/client";
+import { addConsoleLog } from "../core/utils/log";
 import {
     DEFAULT_CLIENT as DEFAULT,
     DEFAULT_NETWORK,
     DEFAULT_HTTP_PORT,
     DEFAULT_UDP_PORT
-} from "../utils/constants";
+} from "../core/utils/constants";
 
 const logger = Winston.loggers.get("client");
 

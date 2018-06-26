@@ -4,15 +4,15 @@ import Program from "commander";
 import * as Ps from "process";
 import Winston from "winston";
 
-import Server from "./server";
-import { addLogFile, addConsoleLog } from "../utils/log";
-import Config from "../utils/config";
+import Server from "../core/daemon/server";
+import { addLogFile, addConsoleLog } from "../core/utils/log";
+import Config from "../core/utils/config";
 import {
     DEFAULT_SERVER as DEFAULT,
     DEFAULT_NETWORK,
     DEFAULT_HTTP_PORT,
     DEFAULT_UDP_PORT
-} from "../utils/constants";
+} from "../core/utils/constants";
 
 const logger = Winston.loggers.get("daemon");
 // Shared directories through cli. Paths pushed via Program.options
