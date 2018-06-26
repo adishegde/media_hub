@@ -14,6 +14,7 @@
         "babel-preset-env": "^1.6.1",
         "eslint": "^4.19.1",
         "husky": "^0.14.3",
+        "pkg": "^4.3.3",
         "prettier": "^1.12.1",
         "pretty-quick": "^1.4.1"
     },
