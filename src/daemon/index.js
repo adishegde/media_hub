@@ -17,6 +17,7 @@ import {
 const logger = Winston.loggers.get("daemon");
 // Shared directories through cli. Paths pushed via Program.options
 const share = [];
+const ignore = [...DEFAULT.ignore];
 
 Program.version("0.1.0")
     .usage("[options]")
@@ -73,6 +74,15 @@ Program.version("0.1.0")
     .option(
         "-c, --config <path>",
         "Path to config file. Config file is a JSON file which can have values for options."
+    )
+    .option(
+        "--ignore <pattern>",
+        "All paths matching <pattern> will be ignored. Option can be repeated to provide multiple patterns.",
+        pattern => {
+            ignore.push(pattern);
+            return ignore;
+        },
+        DEFAULT.ignore
     )
     .parse(process.argv);
 
