@@ -23,9 +23,6 @@ multiple times to share multiple directories:
 
     ./daemon -s /path/to/share1 -s /path/to/share2
 
-**Note**: It is recommended to give absolute paths since behaviour for relative
-paths has not been rigorously tested.
-
 The complete option list can be viewed by running
 
     ./daemon --help

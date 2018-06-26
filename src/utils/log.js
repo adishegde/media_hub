@@ -1,6 +1,7 @@
 /* Logging functionality for daemon. Exports a logger. */
 
 import * as Winston from "winston";
+import * as Path from "path";
 
 Winston.loggers.add("daemon", Winston.createLogger());
 Winston.loggers.add("client", Winston.createLogger());
@@ -21,6 +22,9 @@ export function addConsoleLog(name, level) {
 
 export function addLogFile(name, filename, level) {
     let logger = Winston.loggers.get(name);
+
+    // Convert relative paths to absolute paths
+    filename = Path.resolve(filename);
 
     let conf = {
         filename,

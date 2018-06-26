@@ -2,6 +2,7 @@
  * services */
 import Winston from "winston";
 import * as Fs from "fs";
+import * as Path from "path";
 
 import UDPService from "./services/udp";
 import HTTPService from "./services/http";
@@ -20,8 +21,11 @@ export default class Server {
             throw Error("Share not passed to server.");
         }
 
+        // Resolve any relative to absolute paths
+        let share = config.share.map(path => Path.resolve(path));
+
         // Filter out directories from array of paths
-        let share = config.share.filter(path => {
+        share = share.filter(path => {
             try {
                 // Synchronous since this is initialization
                 // Initial setup should be completed before accetpting requests
