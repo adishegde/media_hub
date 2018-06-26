@@ -84,6 +84,7 @@ Program.version("0.1.0")
         },
         DEFAULT.ignore
     )
+    .option("--selfRespond", "Respond to search requests from same machine.")
     .parse(process.argv);
 
 const SERVEROPTS = [
@@ -95,7 +96,8 @@ const SERVEROPTS = [
     "db",
     "dbwriteInterval",
     "maxResults",
-    "ignore"
+    "ignore",
+    "selfRespond"
 ];
 
 // Final options, i.e. combination of those in command line and config file

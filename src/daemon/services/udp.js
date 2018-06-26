@@ -3,7 +3,12 @@
 import Dgram from "dgram";
 import Winston from "winston";
 
-import { DEFAULT_NETWORK, DEFAULT_UDP_PORT } from "../../utils/constants";
+import {
+    DEFAULT_NETWORK,
+    DEFAULT_UDP_PORT,
+    DEFAULT_SERVER as DEFAULT
+} from "../../utils/constants";
+import { isLocalIP } from "../../utils/functions";
 
 /* The UDP service listens on a given port and responds to incoming search
  * queries on the port of the client. Thus it makes no assumption about the
@@ -21,7 +26,11 @@ export default class UDPservice {
     //    - network [optional]: Identifier for network
     constructor(
         searchHandler,
-        { udpPort: port = DEFAULT_UDP_PORT, network = DEFAULT_NETWORK }
+        {
+            udpPort: port = DEFAULT_UDP_PORT,
+            network = DEFAULT_NETWORK,
+            selfRespond = DEFAULT.selfRespond
+        }
     ) {
         if (!searchHandler) {
             logger.error("SearchHandler not passed to UDPService constructor.");
@@ -31,6 +40,7 @@ export default class UDPservice {
         this.searchHandler = searchHandler;
         this.port = port;
         this.network = network;
+        this.selfRespond = selfRespond;
 
         // Create UDP4 socket with reuseAddr i.e. bind socket even if it is in
         // TIME_WAIT state
@@ -71,12 +81,23 @@ export default class UDPservice {
         try {
             let query = JSON.parse(mssg);
             if (query.network !== this.network) {
-                throw Error("Query doesn't belong to same network");
+                logger.debug(
+                    `UDPService: Query doesn't belong to same network.`
+                );
+                return;
             }
             if (!query.search) {
-                throw Error("Search string is falsy");
+                logger.debug(`UDPService: Search string is falsy.`);
+                return;
             }
-
+            if (!this.selfRespond && isLocalIP(rinf.address)) {
+                // Do not reply if selfRespond is disabled and request is from
+                // same machine
+                logger.debug(
+                    `UDPservice: Request from local machine. Self respond is disabled.`
+                );
+                return;
+            }
             this.handleQuery(query, rinf);
         } catch (err) {
             logger.info(`UDPService: ${err}`);

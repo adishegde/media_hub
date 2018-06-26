@@ -1,5 +1,6 @@
 /* Some utility functions */
 import * as Path from "path";
+import * as Os from "os";
 
 // Returns true if path is descendent of any directory in dirList
 export function isChild(path, dirList) {
@@ -12,4 +13,11 @@ export function isChild(path, dirList) {
             !Path.isAbsolute(relative)
         );
     });
+}
+
+// Returns true if IP address belongs to the same machine
+export function isLocalIP(ipaddr) {
+    return Object.values(Os.networkInterfaces()).some(iface =>
+        iface.some(naddr => naddr.address === ipaddr)
+    );
 }

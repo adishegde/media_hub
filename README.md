@@ -23,6 +23,11 @@ multiple times to share multiple directories:
 
     ./daemon -s /path/to/share1 -s /path/to/share2
 
+By default the daemon is configured to not respond to search requests from
+same machine since it leads to unnecessary clutter. However this behaviour might
+be needed when testing the app. The `--selfRespond` option can be used to enable
+responses to search requests from same machine.
+
 The complete option list can be viewed by running
 
     ./daemon --help
