@@ -11,22 +11,11 @@ import {
     DEFAULT_HTTP_PORT,
     DEFAULT_SERVER as DEFAULT
 } from "../../utils/constants";
+import { isChild } from "../../utils/functions";
 
 const logger = Winston.loggers.get("daemon");
 
 const readdir = Util.promisify(Fs.readdir);
-
-function isChild(path, dirList) {
-    return dirList.some(dir => {
-        let relative = Path.relative(dir, path);
-
-        return (
-            !!relative &&
-            !relative.startsWith("..") &&
-            !Path.isAbsolute(relative)
-        );
-    });
-}
 
 export default class HTTPService {
     // Params:

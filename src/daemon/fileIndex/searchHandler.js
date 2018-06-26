@@ -10,21 +10,9 @@ import * as Path from "path";
 import Winston from "winston";
 
 import { DEFAULT_SERVER as DEFAULT } from "../../utils/constants";
+import { isChild } from "../../utils/functions";
 
 const logger = Winston.loggers.get("daemon");
-
-// Returns true if path is descendent of any directory in dirList
-function isChild(path, dirList) {
-    return dirList.some(dir => {
-        let relative = Path.relative(dir, path);
-
-        return (
-            !!relative &&
-            !relative.startsWith("..") &&
-            !Path.isAbsolute(relative)
-        );
-    });
-}
 
 export default class SearchHandler {
     // Params:
