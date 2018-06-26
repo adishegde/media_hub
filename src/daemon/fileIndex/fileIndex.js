@@ -21,8 +21,9 @@ const fstat = Util.promisify(Fs.stat);
 // - ctime: Change time as returned by fstat. Used to check if update is
 // required.
 class FileTree {
-    // Path of root directory of tree
-    constructor(rootDir) {
+    // Path of root directory of tree and array of RegExp objects for matching
+    // files to ignore
+    constructor(rootDir, ignore) {
         logger.silly(`Constructing FileTree rooted at ${rootDir}...`);
 
         this.root = {
@@ -31,6 +32,7 @@ class FileTree {
             dirs: [],
             ctime: 0
         };
+        this.ignore = ignore;
 
         // Bind methods to avoid unexpected binding errors
         this.update = this.update.bind(this);
@@ -75,6 +77,11 @@ class FileTree {
                     child => {
                         return Path.join(rootNode.path, child);
                     }
+                );
+                // Ignore those files whose name matches even one ignore
+                // pattern
+                currChildrenList = currChildrenList.filter(
+                    child => !this.ignore.some(re => re.test(child))
                 );
                 // Set of paths of new/current children
                 let currChildren = new Set(currChildrenList);
@@ -159,23 +166,31 @@ export default class FileIndex {
     //   - pollingInterval [optional]: The interval between each indexing in milli seconds
     constructor(
         metaData,
-        { share: dirs, pollingInterval = DEFAULT.pollingInterval }
+        {
+            share: dirs,
+            pollingInterval = DEFAULT.pollingInterval,
+            ignore = DEFAULT.ignore
+        }
     ) {
         logger.info("Initializing FileIndex...");
 
         if (!dirs) {
-            logger.error("Array of dirs not passed to FileIndex constructor.");
+            logger.error("FileIndex: Array of dirs not passed");
             throw new Error(
                 "Array of dir not passed to FileIndex constructor."
             );
         }
         if (!metaData) {
-            logger.error(
-                "MetaData object not passed to FileIndex constructor."
-            );
+            logger.error("FileIndex: MetaData object not passed.");
             throw new Error(
                 "MetaData object not passed to FileIndex constructor."
             );
+        }
+        if (!Array.isArray(ignore)) {
+            logger.error(
+                `FileIndex: ignore is not an array. It's value is ${ignore}`
+            );
+            throw Error("Ignore is not an array");
         }
 
         // Bind methods to avoid unexpected binding errors
@@ -186,9 +201,10 @@ export default class FileIndex {
         this.dirs = dirs;
         this.interval = pollingInterval;
         this.meta = metaData;
+        this.ignore = ignore.map(exp => new RegExp(exp));
 
         // Forest of FileTrees corresponding to each direcotry in dirs
-        this.forest = this.dirs.map(dir => new FileTree(dir));
+        this.forest = this.dirs.map(dir => new FileTree(dir, this.ignore));
 
         // Index once
         this.index();

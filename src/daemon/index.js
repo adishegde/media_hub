@@ -84,7 +84,8 @@ const SERVEROPTS = [
     "pollingInterval",
     "db",
     "dbwriteInterval",
-    "maxResults"
+    "maxResults",
+    "ignore"
 ];
 
 // Final options, i.e. combination of those in command line and config file

@@ -8,7 +8,8 @@ const DEFAULT_SERVER = {
     pollingInterval: 4000,
     dbWriteInterval: 10000,
     db: "./meta.json",
-    maxResults: 10
+    maxResults: 10,
+    ignore: [/(^|\/)\.[^\/\.]/]
 };
 
 const DEFAULT_NETWORK = "Media_Hub";

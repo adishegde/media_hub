@@ -7,7 +7,10 @@ import * as Path from "path";
 import Winston from "winston";
 import Mime from "mime-types";
 
-import { DEFAULT_HTTP_PORT } from "../../utils/constants";
+import {
+    DEFAULT_HTTP_PORT,
+    DEFAULT_SERVER as DEFAULT
+} from "../../utils/constants";
 
 const logger = Winston.loggers.get("daemon");
 
@@ -32,7 +35,10 @@ export default class HTTPService {
     //  - A config object of having properties:
     //    - port [optional]: Port on which HTTP service should run
     //    - share: List of shared directories.
-    constructor(metaData, { httpPort: port = DEFAULT_HTTP_PORT, share }) {
+    constructor(
+        metaData,
+        { httpPort: port = DEFAULT_HTTP_PORT, share, ignore = DEFAULT.ignore }
+    ) {
         if (!metaData) {
             logger.error("MetaData object not passed to HTTPService.");
             throw Error("MetaData object not passed to HTTPService.");
@@ -41,10 +47,17 @@ export default class HTTPService {
             logger.error("HTTPService: share not passed.");
             throw Error("Share not passed to HTTPService.");
         }
+        if (!Array.isArray(ignore)) {
+            logger.error(
+                `HTTPService: ignore is not an array. It's value is ${ignore}`
+            );
+            throw Error("Ignore is not an array");
+        }
 
         this.metaData = metaData;
         this.port = port;
         this.share = share;
+        this.ignore = ignore.map(exp => new RegExp(exp));
 
         this.server = Http.createServer(this.rootHandler.bind(this));
         this.server
@@ -241,11 +254,15 @@ export default class HTTPService {
 
         let reqPath = this.metaData.getPathFromId(req.path[0]);
 
+        // Check if reqPath matches any ignore patterns. If it does, it should
+        // not be served.
+        let hiddenFile = this.ignore.some(re => re.test(reqPath));
+
         // Check if file with id exists in db
         // If it exists then check if path is descendent of any shared
         // directory. If not then throw error. This is just an extra check to
         // ensure file is not served in case meta data has extra paths.
-        if (!reqPath || !isChild(reqPath, this.share)) {
+        if (!reqPath || !isChild(reqPath, this.share) || hiddenFile) {
             let x = new Error("Resource not found");
             x.code = 404;
             throw x;

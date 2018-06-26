@@ -25,6 +25,7 @@ function isChild(path, dirList) {
         );
     });
 }
+
 export default class SearchHandler {
     // Params:
     //  - metaDataHandler: Object of class MetaData
@@ -32,7 +33,10 @@ export default class SearchHandler {
     //    - maxResults [optional]: Number of results to return. If less than 0 all results
     //  will be returned else specified number
     //    - share: Array of shared directories
-    constructor(metaDataHandler, { maxResults = DEFAULT.maxResults, share }) {
+    constructor(
+        metaDataHandler,
+        { maxResults = DEFAULT.maxResults, share, ignore = DEFAULT.ignore }
+    ) {
         if (!metaDataHandler) {
             logger.error(
                 "MetaData object not passed to FileIndex constructor."
@@ -43,10 +47,17 @@ export default class SearchHandler {
             logger.error("SearchHandler: share not passed.");
             throw Error("Share not passed to SearchHandler.");
         }
+        if (!Array.isArray(ignore)) {
+            logger.error(
+                `SearchHandler: ignore is not an array. It's value is ${ignore}`
+            );
+            throw Error("Ignore is not an array");
+        }
 
         this.metaData = metaDataHandler;
         this.maxResults = maxResults;
         this.share = share;
+        this.ignore = ignore.map(exp => new RegExp(exp));
     }
 
     // Fuzzy search on name of files
@@ -127,6 +138,11 @@ export default class SearchHandler {
         results = results.filter(result => {
             return isChild(result.path, this.share);
         });
+
+        // Remove results that match even one ignore pattern
+        results = results.filter(
+            result => !this.ignore.some(re => re.test(result.path))
+        );
 
         if (this.maxResults < 0) return results;
         return results.slice(0, this.maxResults);
