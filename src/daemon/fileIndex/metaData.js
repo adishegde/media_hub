@@ -90,53 +90,58 @@ export default class MetaData {
     // Return Value:
     //  A promise that is resolved when the update is complete
     async update(path) {
-        let stat = await fstat(path);
+        try {
+            let stat = await fstat(path);
 
-        let name = Path.basename(path);
-        let downloads = 0;
-        let description = "";
-        let tags = [];
-        let type = "file";
-        let id = uuid(path, UUID_NAMESPACE);
-        let size = stat.size;
+            let name = Path.basename(path);
+            let downloads = 0;
+            let description = "";
+            let tags = [];
+            let type = "file";
+            let id = uuid(path, UUID_NAMESPACE);
+            let size = stat.size;
 
-        if (this.data[path]) {
-            // Get previous value if available
-            ({ downloads, tags, description } = this.data[path]);
+            if (this.data[path]) {
+                // Get previous value if available
+                ({ downloads, tags, description } = this.data[path]);
+            }
+
+            // Set downloads value to max of children if directory
+            if (stat.isDirectory()) {
+                type = "dir";
+                size = 0;
+
+                let children = await readdir(path);
+                children = children.map(child => Path.join(path, child));
+
+                // Calculate size of directory and max downloads.
+                children.forEach(child => {
+                    if (this.data[child]) {
+                        let chdownloads = this.data[child].downloads;
+                        downloads =
+                            downloads > chdownloads ? downloads : chdownloads;
+                        size += this.data[child].size;
+                    }
+                });
+            }
+
+            // Update meta data
+            this.data[path] = {
+                name,
+                description,
+                downloads,
+                tags,
+                type,
+                path,
+                size,
+                id
+            };
+
+            this.hashMap[id] = path;
+        } catch (err) {
+            logger.error(`MetaData.update: ${err}`);
+            logger.debug(`MetaData.update: ${err.stack}`);
         }
-
-        // Set downloads value to max of children if directory
-        if (stat.isDirectory()) {
-            type = "dir";
-            size = 0;
-
-            let children = await readdir(path);
-            children = children.map(child => Path.join(path, child));
-
-            // Calculate size of directory and max downloads.
-            children.forEach(child => {
-                if (this.data[child]) {
-                    let chdownloads = this.data[child].downloads;
-                    downloads =
-                        downloads > chdownloads ? downloads : chdownloads;
-                    size += this.data[child].size;
-                }
-            });
-        }
-
-        // Update meta data
-        this.data[path] = {
-            name,
-            description,
-            downloads,
-            tags,
-            type,
-            path,
-            size,
-            id
-        };
-
-        this.hashMap[id] = path;
     }
 
     getPathFromId(id) {

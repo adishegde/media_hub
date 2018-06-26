@@ -15,7 +15,6 @@ import {
 const logger = Winston.loggers.get("daemon");
 
 const readdir = Util.promisify(Fs.readdir);
-const fstat = Util.promisify(Fs.stat);
 
 function isChild(path, dirList) {
     return dirList.some(dir => {
