@@ -68,8 +68,7 @@ Program.command("search <query> [param]")
         );
 
         // Display results
-        ct
-            .search(query, param)
+        ct.search(query, param)
             .then(data => {
                 if (data.length === 0) {
                     console.log("No results found.");
