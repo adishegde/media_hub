@@ -91,7 +91,7 @@ export default class HTTPService {
                     addr.port
                 }`
             );
-            this.validateRequest(req);
+            await this.validateRequest(req);
 
             // If request is for meta data pass request to metaDataHandler
             // The request handlers may be async so use await to catch errors
@@ -116,27 +116,30 @@ export default class HTTPService {
 
     // Serves metaData of file
     metaDataRequestHandler(req, res) {
-        let data = this.metaData.getData(
-            this.metaData.getPathFromId(req.path[0])
-        );
+        this.metaData
+            .getPathFromId(req.path[0])
+            .then(path => {
+                return this.metaData.getData(path);
+            })
+            .then(data => {
+                // Create new object
+                data = { ...data };
+                // Don't send path in response
+                delete data.path;
+                data = JSON.stringify(data, null, 0);
 
-        // Create new object
-        data = { ...data };
-        // Don't send path in response
-        delete data.path;
-        data = JSON.stringify(data, null, 0);
-
-        res.writeHead(200, {
-            "Content-Type": "application/json"
-        });
-        res.write(data);
-        res.end();
+                res.writeHead(200, {
+                    "Content-Type": "application/json"
+                });
+                res.write(data);
+                res.end();
+            });
     }
 
     // Serves the file
-    fileRequestHandler(req, res) {
-        let data = this.metaData.getData(
-            this.metaData.getPathFromId(req.path[0])
+    async fileRequestHandler(req, res) {
+        let data = await this.metaData.getData(
+            await this.metaData.getPathFromId(req.path[0])
         );
         let path = data.path;
 
@@ -144,36 +147,44 @@ export default class HTTPService {
         if (data.type === "dir") {
             // Returning promise here
             // Promises are used because of async readdir operation
-            return readdir(path).then(children => {
-                children = children.map(child => Path.join(path, child));
+            let children = await readdir(path);
+            children = children.map(child => Path.join(path, child));
 
-                // Get list of children
-                let listing = [];
-                children.forEach(child => {
-                    if (this.metaData.hasFile(child)) {
-                        let chdata = this.metaData.getData(child);
-                        listing.push({
-                            name: chdata.name,
-                            id: chdata.id,
-                            type: chdata.type
-                        });
-                    }
-                });
-
-                let response = {
-                    id: req.path[0],
-                    name: data.name,
-                    size: data.size,
-                    children: listing
-                };
-                response = JSON.stringify(response, null, 0);
-
-                res.writeHead(200, {
-                    "Content-Type": "application/json"
-                });
-                res.write(response);
-                res.end();
+            // Get list of children
+            let listing = [];
+            let chdataList = await Promise.all(
+                children.map(child =>
+                    this.metaData.hasFile(child).then(exists => {
+                        if (exists) return this.metaData.getData(child);
+                        return null;
+                    })
+                )
+            );
+            chdataList.forEach(chdata => {
+                if (chdata)
+                    listing.push({
+                        name: chdata.name,
+                        id: chdata.id,
+                        type: chdata.type
+                    });
             });
+
+            let response = {
+                id: req.path[0],
+                name: data.name,
+                size: data.size,
+                children: listing
+            };
+            response = JSON.stringify(response, null, 0);
+
+            res.writeHead(200, {
+                "Content-Type": "application/json"
+            });
+            res.write(response);
+            res.end();
+
+            // Done with directory response
+            return;
         }
 
         if (req.headers.range) {
@@ -195,7 +206,7 @@ export default class HTTPService {
             fileStream.pipe(res);
         } else {
             // Increment download
-            this.metaData.updateDownload(path);
+            let downUpdate = this.metaData.updateDownload(path);
 
             // If request is for entire file and request is aborted, download is
             // not incremented.
@@ -204,7 +215,8 @@ export default class HTTPService {
                     `HTTPService.fileRequestHandler: ${path} requested aborted.`
                 );
                 // Decrement download. No change since it was incremented before
-                this.metaData.updateDownload(path, -1);
+                // But we have to ensure that downUpdate has been resolved
+                downUpdate.then(() => this.metaData.updateDownload(path, -1));
             });
 
             // Serve entire file if no range specified
@@ -224,7 +236,7 @@ export default class HTTPService {
     // metaData is allowed. Else error is thrown by function.
     // It also pareses URL and assigns the JS object to req.url. It also adds
     // a path property which is an array of resources in the URL.
-    validateRequest(req) {
+    async validateRequest(req) {
         let path = req.url;
         // Remove initial '/' char
         path = path.slice(1);
@@ -240,7 +252,7 @@ export default class HTTPService {
             throw x;
         }
 
-        let reqPath = this.metaData.getPathFromId(req.path[0]);
+        let reqPath = await this.metaData.getPathFromId(req.path[0]);
 
         // Check if reqPath matches any ignore patterns. If it does, it should
         // not be served.

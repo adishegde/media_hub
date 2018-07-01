@@ -1,5 +1,4 @@
-/* Maintaining meta data for indexed files. Currently meta data is stored as a
- * json file */
+/* Maintaining meta data for indexed files. */
 
 import * as Fs from "fs";
 import * as Util from "util";
@@ -33,54 +32,23 @@ let readdir = Util.promisify(Fs.readdir);
 export default class MetaData {
     // Params
     // - An object having params:
-    //   - db [optional]: Path to database (json file)
-    //   - writeInterval [optional]: Interval between consecutive writes
-    constructor({
-        db: dbPath = DEFAULT.db,
-        dbWriteInterval = DEFAULT.dbWriteInterval
-    }) {
-        this.dbPath = dbPath;
-
-        // Synchronous functions used here since we need initialized data
-        try {
-            if (Fs.existsSync(dbPath)) {
-                try {
-                    this.data = JSON.parse(Fs.readFileSync(dbPath));
-                } catch (error) {
-                    logger.error(
-                        `${dbPath} does not contain JSON compatible data. Clearing file...`
-                    );
-
-                    this.data = {};
-                    Fs.closeSync(Fs.openSync(dbPath, "w"));
-                }
-            } else {
-                this.data = {};
-                Fs.closeSync(Fs.openSync(dbPath, "w"));
-            }
-        } catch (error) {
-            logger.error(error);
-            throw error;
+    //   - db [optional]: A level db instance
+    constructor(db) {
+        if (!db) {
+            logger.error("MetaData: No db instance passed.");
+            throw Error("No db instance passed.");
         }
 
-        // Create hash to path mapping
-        this.hashMap = {};
-        Object.keys(this.data).forEach(path => {
-            this.hashMap[uuid(path, UUID_NAMESPACE)] = path;
-        });
+        this.db = db;
 
         // Bind methods to avoid unexpected binding errors
         this.getData = this.getData.bind(this);
-        this.updateDownload = this.updateDownload.bind(this);
+        this.getFileList = this.getFileList.bind(this);
+        this.getPathFromId = this.getPathFromId.bind(this);
+        this.hasFile = this.hasFile.bind(this);
         this.remove = this.remove.bind(this);
         this.update = this.update.bind(this);
-        this.write = this.write.bind(this);
-
-        // Set last write as current time
-        this.lastWrite = new Date();
-        this.writeInterval = dbWriteInterval;
-
-        logger.info(`Loaded meta data from ${dbPath} successfully.`);
+        this.updateDownload = this.updateDownload.bind(this);
     }
 
     // Update data of path.
@@ -101,9 +69,13 @@ export default class MetaData {
             let id = uuid(path, UUID_NAMESPACE);
             let size = stat.size;
 
-            if (this.data[path]) {
-                // Get previous value if available
-                ({ downloads, tags, description } = this.data[path]);
+            try {
+                // Extract old values if they exist
+                ({ downloads, tags, description } = await this.db.get(id));
+            } catch (err) {
+                // If error occured for a reason other than key not beign
+                // present then rethrow error
+                if (!err.notFound) throw err;
             }
 
             // Set downloads value to max of children if directory
@@ -115,18 +87,41 @@ export default class MetaData {
                 children = children.map(child => Path.join(path, child));
 
                 // Calculate size of directory and max downloads.
-                children.forEach(child => {
-                    if (this.data[child]) {
-                        let chdownloads = this.data[child].downloads;
-                        downloads =
-                            downloads > chdownloads ? downloads : chdownloads;
-                        size += this.data[child].size;
-                    }
+                let childData = await Promise.all(
+                    children.map(child =>
+                        this.db
+                            .get(uuid(child, UUID_NAMESPACE))
+                            .then(({ downloads, size }) => ({
+                                downloads,
+                                size
+                            }))
+                            .catch(err => {
+                                // error shouldn't stop the update. Just return
+                                // defaults
+                                // Silly level because error occurs for all
+                                // ignored files
+                                logger.silly(
+                                    `MetaData.update: Error fetching child data for ${child}: ${err}`
+                                );
+                                return {
+                                    downloads: 0,
+                                    size: 0
+                                };
+                            })
+                    )
+                );
+
+                // Compute directory's download and size
+                childData.forEach(child => {
+                    let chdownloads = child.downloads;
+                    downloads =
+                        downloads > chdownloads ? downloads : chdownloads;
+                    size += child.size;
                 });
             }
 
             // Update meta data
-            this.data[path] = {
+            return this.db.put(id, {
                 name,
                 description,
                 downloads,
@@ -135,9 +130,7 @@ export default class MetaData {
                 path,
                 size,
                 id
-            };
-
-            this.hashMap[id] = path;
+            });
         } catch (err) {
             logger.error(`MetaData.update: ${err}`);
             logger.debug(`MetaData.update: ${err.stack}`);
@@ -145,7 +138,7 @@ export default class MetaData {
     }
 
     getPathFromId(id) {
-        return this.hashMap[id];
+        return this.db.get(id).then(({ path }) => path);
     }
 
     // Get meta data of path
@@ -155,12 +148,14 @@ export default class MetaData {
     // Return Value:
     //  Meta data i.e. JS object
     getData(path) {
-        return this.data[path];
+        return this.db.get(uuid(path, UUID_NAMESPACE));
     }
 
     // Returns true if metaData for path is present
     hasFile(path) {
-        return this.data.hasOwnProperty(path);
+        return this.db
+            .get(uuid(path, UUID_NAMESPACE))
+            .then(() => true, () => false);
     }
 
     // Increase downloads by delta for path
@@ -168,8 +163,12 @@ export default class MetaData {
     // - path: Path for which downloads has to be increased.
     // - delta [optional]: Amount by which to increase download. Default is 1.
     updateDownload(path, delta = 1) {
-        this.data[path].downloads += delta;
-        this.write();
+        let id = uuid(path, UUID_NAMESPACE);
+
+        return this.db.get(id).then(data => {
+            data.downloads += delta;
+            return this.db.put(id, data);
+        });
     }
 
     // Remove path's meta data
@@ -179,51 +178,30 @@ export default class MetaData {
     // Return value:
     //  True if removal was successful
     remove(path) {
-        return delete this.data[path];
-    }
-
-    // Write data to db (json file) only if last write was a certain time ago
-    // Return Value:
-    //  Promise resolved to true if write performed else Promise resolved to
-    //  false
-    write() {
-        let currentTime = new Date();
-
-        logger.silly(
-            `Request to write meta data to ${
-                this.dbPath
-            }. Time elapsed after last write: ${currentTime -
-                this.lastWrite} milliseconds`
-        );
-
-        if (currentTime - this.lastWrite > this.writeInterval) {
-            return writeFile(this.dbPath, JSON.stringify(this.data)).then(
-                () => {
-                    logger.silly(
-                        `Wrote meta data to ${this.dbPath} successfully.`
-                    );
-
-                    // Update last write
-                    this.lastWrite = new Date();
-                    return true;
-                },
-                error => {
-                    logger.error(
-                        `Error while writing meta data to ${
-                            this.dbPath
-                        }: ${error}`
-                    );
-                }
-            );
-        }
-
-        return Promise.resolve(false);
+        return this.db.del(uuid(path, UUID_NAMESPACE));
     }
 
     // Get array of meta data objects
     // Return Value:
     //  Array of meta data objects for each file that is indexed
     getFileList() {
-        return Object.values(this.data);
+        let dataList = [];
+
+        return new Promise((resolve, reject) => {
+            // db creates a readstream of values
+            // We extract values and place it into an array
+            this.db
+                .createValueStream()
+                .on("data", data => {
+                    dataList.push(data);
+                })
+                .on("end", () => {
+                    resolve(dataList);
+                })
+                .on("error", () => {
+                    logger.debug(`MetaData.FileList: ${err}`);
+                    resolve(dataList);
+                });
+        });
     }
 }

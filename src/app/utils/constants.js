@@ -18,7 +18,7 @@ export const DAEMON_LOG = "daemon.error.log";
 // Name of client log file
 export const CLIENT_LOG = "client.error.log";
 
-export const DB = "db.json";
+export const DB = "mh-meta";
 
 export const APP_NAME = "Media Hub";
 

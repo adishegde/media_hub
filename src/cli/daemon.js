@@ -143,7 +143,7 @@ function setup() {
         serverOpts.share = undefined;
     }
 
-    server = new Server(serverOpts);
+    server = new Server(serverOpts.db, serverOpts);
     server.start();
 }
 

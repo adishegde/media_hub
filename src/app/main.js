@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import * as Path from "path";
 import * as Url from "url";
 import * as Fs from "fs";
+import Level from "level";
 
 import {
     CONFIG_FILE,
@@ -24,6 +25,9 @@ let server;
 
 // Reference to app config handler
 let config;
+
+// Reference to db
+let db;
 
 // Log level for daemon and client logs
 let logLevel = "error";
@@ -95,6 +99,10 @@ function init() {
         addLogFile("daemon", daemonLogFile, "error");
         addLogFile("client", clientLogFile, "error");
 
+        // Create db
+        // Once created here, it's not closed for the lifetime of the app
+        db = Level(dbPath, { valueEncoding: "json" });
+
         // Assign the config handler to "config". This will be used throughout
         // the app to update the config file.
         config = new Config(configFile);
@@ -139,8 +147,8 @@ function createServer() {
 
     try {
         // Create new server using app settings
-        server = new Server(config._);
-        global.server = server;
+        // Passes existing db instance
+        server = new Server(db, config._);
     } catch (err) {
         // if error occurs then emit error onto browser window
         mainWindow.webContents.send("server-error", err);
@@ -163,4 +171,6 @@ app.on("activate", function() {
 app.on("will-quit", () => {
     // Stop server if it's running
     if (server) server.stop();
+    // Close db connection before quitting
+    if (db) db.close();
 });
