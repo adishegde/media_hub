@@ -77,7 +77,7 @@ export default class UDPservice {
     }
 
     // Processes and validates incoming requests
-    process(mssg, rinf) {
+    async process(mssg, rinf) {
         try {
             let query = JSON.parse(mssg);
             if (query.network !== this.network) {
@@ -98,7 +98,7 @@ export default class UDPservice {
                 );
                 return;
             }
-            this.handleQuery(query, rinf);
+            await this.handleQuery(query, rinf);
         } catch (err) {
             logger.info(`UDPService: ${err}`);
             logger.debug(`UDPService: ${err.stack}`);
@@ -115,32 +115,34 @@ export default class UDPservice {
             }`
         );
 
-        let results = [];
+        let resultProm;
 
         switch (query.param) {
             case "name":
-                results = this.searchHandler.searchByName(query.search);
+                resultProm = this.searchHandler.searchByName(query.search);
                 break;
             case "tag":
-                results = this.searchHandler.searchByTag(query.search);
+                resultProm = this.searchHandler.searchByTag(query.search);
                 break;
             default:
-                results = this.searchHandler.search(query.search);
+                resultProm = this.searchHandler.search(query.search);
         }
 
-        // Send only name and id of file in response
-        results = results.map(result => [result.name, result.id]);
+        // searchHandler returns a Promise
+        return resultProm.then(results => {
+            // Send only name and id of file in response
+            results = results.map(result => [result.name, result.id]);
+            // Complete response object
+            let response = {
+                network: query.network,
+                search: query.search,
+                param: query.param,
+                results: results
+            };
+            response = JSON.stringify(response, null, 0);
 
-        // Complete response object
-        let response = {
-            network: query.network,
-            search: query.search,
-            param: query.param,
-            results: results
-        };
-        response = JSON.stringify(response, null, 0);
-
-        // Send response to destination port and address
-        this.socket.send(response, rinf.port, rinf.address);
+            // Send response to destination port and address
+            this.socket.send(response, rinf.port, rinf.address);
+        });
     }
 }

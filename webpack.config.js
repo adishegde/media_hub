@@ -1,6 +1,8 @@
 const Path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const NodeExternals = require("webpack-node-externals");
 
+// No need to bundle node modules for main process
 const mainProcConfig = {
     entry: Path.resolve(__dirname, "src", "app", "main.js"),
     output: {
@@ -12,13 +14,15 @@ const mainProcConfig = {
         rules: [
             {
                 test: /\.js$/,
+                exclude: /node_modules/,
                 loader: "babel-loader"
             }
         ]
     },
     resolve: {
         modules: [Path.join(__dirname, "src"), "node_modules"]
-    }
+    },
+    externals: [NodeExternals()]
 };
 
 const renderProcConfig = {

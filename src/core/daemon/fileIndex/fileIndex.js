@@ -238,7 +238,6 @@ export default class FileIndex {
 
         return Promise.all(treeUpdates)
             .then(() => {
-                this.meta.write();
                 logger.silly(
                     `Done with indexing which was started at ${currTime}`
                 );
