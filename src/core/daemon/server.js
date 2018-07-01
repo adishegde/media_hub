@@ -79,7 +79,7 @@ export default class Server {
 
         try {
             this.db = db;
-            this.metaDataHandler = new MetaData(this.db);
+            this.metaDataHandler = new MetaData(this.db, config);
             this.fileIndex = new FileIndex(this.metaDataHandler, config);
             this.searchHandler = new SearchHandler(
                 this.metaDataHandler,

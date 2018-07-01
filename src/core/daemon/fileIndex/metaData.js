@@ -33,19 +33,26 @@ export default class MetaData {
     // Params
     // - An object having params:
     //   - db [optional]: A level db instance
-    constructor(db) {
+    constructor(db, { ignore = DEFAULT.ignore }) {
         if (!db) {
             logger.error("MetaData: No db instance passed.");
             throw Error("No db instance passed.");
         }
+        if (!Array.isArray(ignore)) {
+            logger.error(
+                `MetaData: ignore is not an array. It's value is ${ignore}`
+            );
+            throw Error("Ignore is not an array");
+        }
 
         this.db = db;
+        this.ignore = ignore.map(exp => new RegExp(exp));
 
         // Bind methods to avoid unexpected binding errors
-        this.getData = this.getData.bind(this);
+        // Since meta data is used in other classes heavily
+        this.getDataFromId = this.getDataFromId.bind(this);
+        this.getDataFromPath = this.getDataFromPath.bind(this);
         this.getFileList = this.getFileList.bind(this);
-        this.getPathFromId = this.getPathFromId.bind(this);
-        this.hasFile = this.hasFile.bind(this);
         this.remove = this.remove.bind(this);
         this.update = this.update.bind(this);
         this.updateDownload = this.updateDownload.bind(this);
@@ -73,20 +80,27 @@ export default class MetaData {
                 // Extract old values if they exist
                 ({ downloads, tags, description } = await this.db.get(id));
             } catch (err) {
-                // If error occured for a reason other than key not beign
+                // If error occured for a reason other than key not being
                 // present then rethrow error
                 if (!err.notFound) throw err;
             }
 
-            // Set downloads value to max of children if directory
+            // Set downloads value to max of children if directory and also
+            // Calculate size of directory
             if (stat.isDirectory()) {
                 type = "dir";
                 size = 0;
 
                 let children = await readdir(path);
                 children = children.map(child => Path.join(path, child));
+                // Filter out all children which should be ignored. This leads
+                // to fewer negatives on db get
+                children = children.filter(
+                    child => !this.ignore.some(re => re.test(child))
+                );
 
-                // Calculate size of directory and max downloads.
+                // Each db get returns a Promise. We collect all these in an
+                // array and then wait for all of them to resolve.
                 let childData = await Promise.all(
                     children.map(child =>
                         this.db
@@ -98,8 +112,6 @@ export default class MetaData {
                             .catch(err => {
                                 // error shouldn't stop the update. Just return
                                 // defaults
-                                // Silly level because error occurs for all
-                                // ignored files
                                 logger.silly(
                                     `MetaData.update: Error fetching child data for ${child}: ${err}`
                                 );
@@ -137,8 +149,8 @@ export default class MetaData {
         }
     }
 
-    getPathFromId(id) {
-        return this.db.get(id).then(({ path }) => path);
+    getDataFromId(id) {
+        return this.db.get(id);
     }
 
     // Get meta data of path
@@ -146,16 +158,10 @@ export default class MetaData {
     // - path: Path for which meta data is to be obtained
     //
     // Return Value:
-    //  Meta data i.e. JS object
-    getData(path) {
+    //  A promise that resolves to the data. Promise is rejected if it doesn't
+    //  exist.
+    getDataFromPath(path) {
         return this.db.get(uuid(path, UUID_NAMESPACE));
-    }
-
-    // Returns true if metaData for path is present
-    hasFile(path) {
-        return this.db
-            .get(uuid(path, UUID_NAMESPACE))
-            .then(() => true, () => false);
     }
 
     // Increase downloads by delta for path
@@ -176,9 +182,17 @@ export default class MetaData {
     // - path: Path for which data is to be removed
     //
     // Return value:
-    //  True if removal was successful
+    //  A promise that resolve true if it was successful
     remove(path) {
-        return this.db.del(uuid(path, UUID_NAMESPACE));
+        return this.db.del(uuid(path, UUID_NAMESPACE)).then(
+            () => true,
+            err => {
+                // Ignore any error. Their mostly caused by the key not
+                // existing.
+                logger.debug(`MetaData.remove: ${err}`);
+                return false;
+            }
+        );
     }
 
     // Get array of meta data objects
@@ -199,7 +213,8 @@ export default class MetaData {
                     resolve(dataList);
                 })
                 .on("error", () => {
-                    logger.debug(`MetaData.FileList: ${err}`);
+                    logger.error(`MetaData.FileList: ${err}`);
+                    logger.debug(`MetaData.FileList: ${err.stack}`);
                     resolve(dataList);
                 });
         });
