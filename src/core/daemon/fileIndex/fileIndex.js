@@ -214,15 +214,27 @@ export default class FileIndex {
     start() {
         logger.info("Starting periodic file indexing...");
 
-        // Store timer id so that it can be cancelled afterwards if needed
-        this.indexTimerId = setInterval(this.index, this.interval);
+        // Start only if not already running
+        // If indexer is running then indexTimerId is not falsy
+        if (!this.indexTimerId) {
+            // Store timer id so that it can be cancelled afterwards if needed
+            this.indexTimerId = setInterval(this.index, this.interval);
+            // Return true if server was actually started
+            return Promise.resolve(true);
+        }
+
+        return Promise.resolve(false);
     }
 
     // Stop indexing files
     stop() {
-        clearInterval(this.indexTimerId);
-
-        logger.info("Stopped periodic file indexing.");
+        // If indexer is running then indexTimerId is not falsy
+        if (this.indexTimerId) {
+            clearInterval(this.indexTimerId);
+            logger.info("Stopped periodic file indexing.");
+            return Promise.resolve(true);
+        }
+        return Promise.resolve(false);
     }
 
     // Index files in dirs.
@@ -238,7 +250,6 @@ export default class FileIndex {
 
         return Promise.all(treeUpdates)
             .then(() => {
-                this.meta.write();
                 logger.silly(
                     `Done with indexing which was started at ${currTime}`
                 );

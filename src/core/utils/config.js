@@ -17,7 +17,8 @@ export default class Config {
         try {
             fileData = JSON.parse(readFileSync(filename));
         } catch (e) {
-            throw e;
+            // In case of error assign empty object
+            fileData = {};
         }
 
         this._ = fileData;

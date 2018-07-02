@@ -3,6 +3,7 @@
 import Program from "commander";
 import * as Ps from "process";
 import Winston from "winston";
+import NodeCleanup from "node-cleanup";
 
 import Server from "../core/daemon/server";
 import { addLogFile, addConsoleLog } from "../core/utils/log";
@@ -143,7 +144,7 @@ function setup() {
         serverOpts.share = undefined;
     }
 
-    server = new Server(serverOpts);
+    server = new Server(serverOpts.db, serverOpts);
     server.start();
 }
 
@@ -164,6 +165,30 @@ function init() {
         logger.debug(`index.js: ${err.stack}`);
     }
 }
+
+// Elegantly free resources on process exit
+NodeCleanup((code, signal) => {
+    logger.info(`index.js: Starting cleanup.`);
+    if (server) {
+        let stopped = Object.values(server.stop());
+        Promise.all(stopped)
+            .then(
+                val => {
+                    logger.info(
+                        "index.js: Cleaned all resources. Shutting down."
+                    );
+                },
+                err => {
+                    logger.error(`index.js: ${err}`);
+                }
+            )
+            .then(() => {
+                process.kill(process.pid, signal);
+            });
+        NodeCleanup.uninstall();
+        return false;
+    }
+});
 
 // Initialize on startup
 init();

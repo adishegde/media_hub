@@ -66,8 +66,10 @@ export default class SearchHandler {
             keys: ["name"]
         };
 
-        let fuse = new Fuse(this.metaData.getFileList(), options);
-        return this._filterSearches(fuse.search(search));
+        return this.metaData.getFileList().then(files => {
+            let fuse = new Fuse(files, options);
+            return this._filterSearches(fuse.search(search));
+        });
     }
 
     // Fuzzy search on tags of files
@@ -85,8 +87,10 @@ export default class SearchHandler {
             keys: ["tag"]
         };
 
-        let fuse = new Fuse(this.metaData.getFileList(), options);
-        return this._filterSearches(fuse.search(search));
+        return this.metaData.getFileList().then(files => {
+            let fuse = new Fuse(files, options);
+            return this._filterSearches(fuse.search(search));
+        });
     }
 
     // Weighted fuzzy search on multiple properties
@@ -115,8 +119,10 @@ export default class SearchHandler {
             ]
         };
 
-        let fuse = new Fuse(this.metaData.getFileList(), options);
-        return this._filterSearches(fuse.search(search));
+        return this.metaData.getFileList().then(files => {
+            let fuse = new Fuse(files, options);
+            return this._filterSearches(fuse.search(search));
+        });
     }
 
     _filterSearches(results) {

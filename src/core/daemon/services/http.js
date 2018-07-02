@@ -42,6 +42,9 @@ export default class HTTPService {
             throw Error("Ignore is not an array");
         }
 
+        // Initially service is not running
+        this.running = false;
+
         this.metaData = metaData;
         this.port = port;
         this.share = share;
@@ -55,31 +58,75 @@ export default class HTTPService {
 
                 socket.end("HTTP/1.1 400 Bad Request\r\n\r\n");
             })
-            .on("listening", () => {
-                let addr = this.server.address();
-                logger.info(
-                    `HTTPService: listening on ${addr.address}:${addr.port}`
-                );
-            })
             .on("error", err => {
+                // Root error handler. Logs all errors
                 logger.error(`HTTPService: ${err}`);
                 logger.debug(`HTTPService: ${err.stack}`);
-            })
-            .on("close", () => {
-                logger.info("HTTPService: Service stopped");
             });
     }
 
     // Starts the service
     start() {
         logger.debug("HTTPService: Start function called");
-        this.server.listen(this.port);
+
+        return new Promise((resolve, reject) => {
+            // Start service only if it isn't running
+            // Note that calling start for the 2nd time before the listen
+            // event's callback is called will result in an error. We should
+            // wait for the returned Promise to resolve for proper
+            // behaviour.
+            if (!this.running) {
+                this.server.listen(this.port, () => {
+                    let addr = this.server.address();
+                    // Service has started once socket is listening
+                    this.running = true;
+                    logger.info(
+                        `HTTPService: listening on ${addr.address}:${addr.port}`
+                    );
+                    resolve(true);
+                });
+
+                // We register a one time error listener in case listen faces an
+                // error. In case of successful listen the listner might
+                // be called for some other error event. But our promise
+                // is already resolved so it doesn't matter.
+                this.server.once("error", err => {
+                    // Error is logged by root handler
+                    reject(err);
+                });
+            } else {
+                // If service was already running return false
+                resolve(false);
+            }
+        });
     }
 
     // Stops the service
     stop() {
         logger.debug("HTTPService: Stop function called");
-        this.server.close();
+
+        return new Promise((resolve, reject) => {
+            // Note that calling stop for the 2nd time before the first call's
+            // Promise is resolved will lead to an error. We should wait for the
+            // first promise to resolve.
+            if (this.running) {
+                this.server.close(() => {
+                    logger.info("HTTPService: Service stopped");
+                    this.running = false;
+                    resolve(true);
+                });
+
+                // We register one time error handler to catch any errors
+                // that might occur when closing the server.
+                this.server.once("error", () => {
+                    // Error is logged by root handler
+                    reject(false);
+                });
+            } else {
+                // If server was already stopped
+                resolve(false);
+            }
+        });
     }
 
     // Handles all incoming requests
@@ -91,7 +138,7 @@ export default class HTTPService {
                     addr.port
                 }`
             );
-            this.validateRequest(req);
+            await this.validateRequest(req);
 
             // If request is for meta data pass request to metaDataHandler
             // The request handlers may be async so use await to catch errors
@@ -116,67 +163,87 @@ export default class HTTPService {
 
     // Serves metaData of file
     metaDataRequestHandler(req, res) {
-        let data = this.metaData.getData(
-            this.metaData.getPathFromId(req.path[0])
-        );
+        this.metaData.getDataFromId(req.path[0]).then(data => {
+            // Create new object
+            data = { ...data };
+            // Don't send path in response
+            delete data.path;
+            data = JSON.stringify(data, null, 0);
 
-        // Create new object
-        data = { ...data };
-        // Don't send path in response
-        delete data.path;
-        data = JSON.stringify(data, null, 0);
-
-        res.writeHead(200, {
-            "Content-Type": "application/json"
+            res.writeHead(200, {
+                "Content-Type": "application/json"
+            });
+            res.write(data);
+            res.end();
         });
-        res.write(data);
-        res.end();
     }
 
     // Serves the file
-    fileRequestHandler(req, res) {
-        let data = this.metaData.getData(
-            this.metaData.getPathFromId(req.path[0])
-        );
+    async fileRequestHandler(req, res) {
+        let data = await this.metaData.getDataFromId(req.path[0]);
         let path = data.path;
 
         // If directory return directory listing
         if (data.type === "dir") {
-            // Returning promise here
-            // Promises are used because of async readdir operation
-            return readdir(path).then(children => {
-                children = children.map(child => Path.join(path, child));
+            let children = await readdir(path);
+            children = children.map(child => Path.join(path, child));
+            // Filter out ignored files from children. This reduces number of
+            // misses in db. i.e. number of negatives for getDataFromPath
+            children = children.filter(
+                child => !this.ignore.some(re => re.test(child))
+            );
 
-                // Get list of children
-                let listing = [];
-                children.forEach(child => {
-                    if (this.metaData.hasFile(child)) {
-                        let chdata = this.metaData.getData(child);
-                        listing.push({
-                            name: chdata.name,
-                            id: chdata.id,
-                            type: chdata.type
-                        });
-                    }
-                });
-
-                let response = {
-                    id: req.path[0],
-                    name: data.name,
-                    size: data.size,
-                    children: listing
-                };
-                response = JSON.stringify(response, null, 0);
-
-                res.writeHead(200, {
-                    "Content-Type": "application/json"
-                });
-                res.write(response);
-                res.end();
+            // Get list of children
+            let listing = [];
+            // Get list of data for children
+            // Each data fetch returns a Promise. We collect all these
+            // promises in an array and then wait for all of them to
+            // resolve
+            let chdataList = await Promise.all(
+                children.map(child =>
+                    this.metaData.getDataFromPath(child).catch(() => {
+                        // In case the key doesn't exist, error is thrown.
+                        // We return null to avoid an error being thrown.
+                        return null;
+                    })
+                )
+            );
+            // Filter the response that should be sent. i.e. add only those
+            // properties to elements of listing that should be sent
+            chdataList.forEach(chdata => {
+                if (chdata)
+                    listing.push({
+                        name: chdata.name,
+                        id: chdata.id,
+                        type: chdata.type
+                    });
             });
+
+            let response = {
+                id: req.path[0],
+                name: data.name,
+                size: data.size,
+                children: listing
+            };
+            response = JSON.stringify(response, null, 0);
+
+            res.writeHead(200, {
+                "Content-Type": "application/json"
+            });
+            res.write(response);
+            res.end();
+
+            // Done with directory response
+            return;
         }
 
+        // For both range requests and normal requests we return before we have
+        // completed serving the entire file. I don't think that it should
+        // cause any problems but it's worth noting.
         if (req.headers.range) {
+            // Serving range requests helps stream videos on browsers using
+            // inbuilt controls.
+
             // Calculate range of data to serve
             let range = req.headers.range;
             let parts = range.replace(/bytes=/, "").split("-");
@@ -184,6 +251,7 @@ export default class HTTPService {
             let end = parts[1] ? parseInt(parts[1], 10) : data.size - 1;
             let chunksize = end - start + 1;
 
+            // Open read stream containing only the required chunk
             let fileStream = Fs.createReadStream(path, { start, end });
 
             res.writeHead(206, {
@@ -192,10 +260,11 @@ export default class HTTPService {
                 "Content-Length": `${chunksize}`,
                 "Content-Type": Mime.lookup(path) || "application/octet-stream"
             });
+            // Pipe the file stream to res to serve the file data
             fileStream.pipe(res);
         } else {
             // Increment download
-            this.metaData.updateDownload(path);
+            let downUpdate = this.metaData.updateDownload(path);
 
             // If request is for entire file and request is aborted, download is
             // not incremented.
@@ -204,10 +273,15 @@ export default class HTTPService {
                     `HTTPService.fileRequestHandler: ${path} requested aborted.`
                 );
                 // Decrement download. No change since it was incremented before
-                this.metaData.updateDownload(path, -1);
+                // But we have to ensure that downInc has been resolved
+                downUpdate = downUpdate.then(() =>
+                    this.metaData.updateDownload(path, -1)
+                );
             });
 
             // Serve entire file if no range specified
+            // If range was specified then previous if block would have been
+            // run
             res.writeHead(200, {
                 "Content-Type": Mime.lookup(path) || "application/octet-stream",
                 "Content-Length": `${data.size}`,
@@ -240,20 +314,33 @@ export default class HTTPService {
             throw x;
         }
 
-        let reqPath = this.metaData.getPathFromId(req.path[0]);
+        return this.metaData
+            .getDataFromId(req.path[0])
+            .then(({ path: reqPath }) => {
+                // If promise is not rejected then path exists.
+                // If it matches ignore patterns then it should not be served.
+                let hiddenFile = this.ignore.some(re => re.test(reqPath));
+                // Check if path is descendent of any shared directory.
+                // This is just an extra check to ensure file is not served in
+                // case meta data has extra paths.
+                let isShared = isChild(reqPath, this.share);
 
-        // Check if reqPath matches any ignore patterns. If it does, it should
-        // not be served.
-        let hiddenFile = this.ignore.some(re => re.test(reqPath));
+                if (hiddenFile || !isShared) {
+                    // If hidden or not shared then throw error
+                    throw Error("Resource can't be shared");
+                }
+            })
+            .catch(err => {
+                logger.debug(`HTTPService.validateRequest: ${err}`);
+                logger.debug(`HTTPService.validateRequest: ${err.stack}`);
 
-        // Check if file with id exists in db
-        // If it exists then check if path is descendent of any shared
-        // directory. If not then throw error. This is just an extra check to
-        // ensure file is not served in case meta data has extra paths.
-        if (!reqPath || !isChild(reqPath, this.share) || hiddenFile) {
-            let x = new Error("Resource not found");
-            x.code = 404;
-            throw x;
-        }
+                // If id doesn't exist in db or it can't be shared then control
+                // reaches here
+                let x = new Error("Resource not found");
+                x.code = 404;
+                // Reject returned promise so that rootHandler can handle response
+                // properly
+                throw x;
+            });
     }
 }

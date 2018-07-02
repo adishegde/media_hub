@@ -34,79 +34,76 @@ const mkdir = Util.promisify(Fs.mkdir);
 function _download(url, path, pathIsDir, callback) {
     return new Promise((resolve, reject) => {
         let req = http(url);
-        req
-            .on("error", err => {
-                // On request error
-                reject(err);
-            })
-            .on("response", res => {
-                if (res.statusCode !== 200) {
-                    logger.debug(
-                        `_download: Server responded with ${res.statusCode}: ${
-                            res.statusMessage
-                        }`
-                    );
-                    reject(
-                        `Server responded with ${res.statusCode}: ${
-                            res.statusMessage
-                        }`
-                    );
-                }
-                if (pathIsDir) {
-                    let fileName = res.headers["content-disposition"];
-                    // Extract filename from header. Assumption is that the
-                    // header is exactly as returned by the http service.
-                    // Might throw errors for other headers
-                    fileName = fileName.replace(`inline; filename="`, "");
-                    // Remove trailing double quote
-                    fileName = fileName.slice(0, fileName.length - 1);
+        req.on("error", err => {
+            // On request error
+            reject(err);
+        }).on("response", res => {
+            if (res.statusCode !== 200) {
+                logger.debug(
+                    `_download: Server responded with ${res.statusCode}: ${
+                        res.statusMessage
+                    }`
+                );
+                reject(
+                    `Server responded with ${res.statusCode}: ${
+                        res.statusMessage
+                    }`
+                );
+            }
+            if (pathIsDir) {
+                let fileName = res.headers["content-disposition"];
+                // Extract filename from header. Assumption is that the
+                // header is exactly as returned by the http service.
+                // Might throw errors for other headers
+                fileName = fileName.replace(`inline; filename="`, "");
+                // Remove trailing double quote
+                fileName = fileName.slice(0, fileName.length - 1);
 
-                    path = Path.join(path, fileName);
-                }
+                path = Path.join(path, fileName);
+            }
 
-                let fileSize = parseInt(res.headers["content-length"], 10);
-                let bytesDownloaded = 0;
+            let fileSize = parseInt(res.headers["content-length"], 10);
+            let bytesDownloaded = 0;
 
-                // Do no overwrite existing file
-                let downloadedFile = Fs.createWriteStream(path, {
-                    flags: "wx"
-                });
-
-                // If file exists or some unexpected error
-                downloadedFile
-                    .on("error", err => {
-                        // Abort HTTP request and unpipe response
-                        req.abort();
-                        res.unpipe(downloadedFile);
-
-                        logger.debug(`_download: ${err}`);
-
-                        if (err.code === "EEXIST")
-                            reject(`${path} already exsits`);
-                        else reject(err);
-                    })
-                    .on("open", err => {
-                        // add event handlers to res only after file has been
-                        // successfully opened. This ensures that callback is
-                        // called only if writeStream opened successfully
-                        res.on("data", chunk => {
-                            bytesDownloaded += chunk.length;
-                            try {
-                                // Don't stop download due to callback errors
-                                callback(bytesDownloaded, fileSize, path);
-                            } catch (err) {
-                                logger.debug(`_download: ${err}`);
-                                logger.debug(`_download: ${err.stack}`);
-                            }
-                        });
-
-                        // Pipe data
-                        res.pipe(downloadedFile);
-                    })
-                    .on("finish", () => {
-                        resolve(path);
-                    });
+            // Do no overwrite existing file
+            let downloadedFile = Fs.createWriteStream(path, {
+                flags: "wx"
             });
+
+            // If file exists or some unexpected error
+            downloadedFile
+                .on("error", err => {
+                    // Abort HTTP request and unpipe response
+                    req.abort();
+                    res.unpipe(downloadedFile);
+
+                    logger.debug(`_download: ${err}`);
+
+                    if (err.code === "EEXIST") reject(`${path} already exsits`);
+                    else reject(err);
+                })
+                .on("open", err => {
+                    // add event handlers to res only after file has been
+                    // successfully opened. This ensures that callback is
+                    // called only if writeStream opened successfully
+                    res.on("data", chunk => {
+                        bytesDownloaded += chunk.length;
+                        try {
+                            // Don't stop download due to callback errors
+                            callback(bytesDownloaded, fileSize, path);
+                        } catch (err) {
+                            logger.debug(`_download: ${err}`);
+                            logger.debug(`_download: ${err.stack}`);
+                        }
+                    });
+
+                    // Pipe data
+                    res.pipe(downloadedFile);
+                })
+                .on("finish", () => {
+                    resolve(path);
+                });
+        });
     });
 }
 
@@ -119,9 +116,10 @@ function _download(url, path, pathIsDir, callback) {
 //  - callback: callback is sent bytes downloaded, file size and path as
 //  arguments
 async function _downloadDir(url, path, callback) {
+    let req;
     let res = await new Promise((resolve, reject) => {
         // extremely minimal error handling in case it is not directory URL
-        http(url, res => {
+        req = http(url, res => {
             let data = "";
 
             if (res.statusCode !== 200) {
@@ -137,22 +135,25 @@ async function _downloadDir(url, path, callback) {
                 );
             }
 
-            res
-                .on("data", chunk => {
-                    data += chunk;
-                })
-                .on("end", () => {
-                    try {
-                        resolve(JSON.parse(data));
-                    } catch (err) {
-                        reject("Corrupted response");
-                    }
-                });
+            res.on("data", chunk => {
+                data += chunk;
+            }).on("end", () => {
+                try {
+                    resolve(JSON.parse(data));
+                } catch (err) {
+                    reject("Corrupted response");
+                }
+            });
         }).on("error", err => {
             // Error on request object, returned by http
             logger.debug(`Client._downloadDir: ${err}`);
             reject("Error connecting to server.");
         });
+    }).catch(err => {
+        // If previous promise has been rejected then req might not have been
+        // aborted.
+        if (req) req.abort();
+        throw err;
     });
 
     let childDownloadPromise = [];
@@ -490,8 +491,12 @@ export default class Client {
             if (!path) throw Error("No valid incoming or path passed");
             if (!url) throw Error("No url passed");
 
+            // We'll need to access req later in the Promise chain, so we maintain
+            // a external reference
+            let req;
             let res = await new Promise((resolve, reject) => {
-                http(url, res => {
+                // res is IncomingMessage while req is ClientRequest
+                req = http(url, res => {
                     let data = "";
 
                     if (res.statusCode !== 200) {
@@ -510,22 +515,25 @@ export default class Client {
                     if (res.headers["content-type"] !== "application/json")
                         throw Error("URL does not correspond to directory");
 
-                    res
-                        .on("data", chunk => {
-                            data += chunk;
-                        })
-                        .on("end", () => {
-                            try {
-                                resolve(JSON.parse(data));
-                            } catch (err) {
-                                reject("Corrupted response");
-                            }
-                        });
+                    res.on("data", chunk => {
+                        data += chunk;
+                    }).on("end", () => {
+                        try {
+                            resolve(JSON.parse(data));
+                        } catch (err) {
+                            reject("Corrupted response");
+                        }
+                    });
                 }).on("error", err => {
                     // Error on request object, returned by http
                     logger.debug(`Client.downloadDirectory: ${err}`);
                     reject("Error connecting to server.");
                 });
+            }).catch(err => {
+                // If previous promise is rejected then req might not have
+                // been aborted
+                if (req) req.abort();
+                throw err;
             });
 
             if (!res.children)
@@ -593,10 +601,14 @@ export default class Client {
             return Promise.reject("URL not passed.");
         }
 
+        // We'll need to access req later in the Promise chain, so we maintain
+        // a external reference
+        let req;
         // URL for meta data
         let metaUrl = `${url}/meta`;
         return new Promise((resolve, reject) => {
-            http(metaUrl, res => {
+            // res is IncomingMessage while req is ClientRequest
+            req = http(metaUrl, res => {
                 let data = "";
 
                 if (res.statusCode !== 200) {
@@ -615,22 +627,25 @@ export default class Client {
                 if (res.headers["content-type"] !== "application/json")
                     reject(`${metaUrl} does not correspond to meta data`);
 
-                res
-                    .on("data", chunk => {
-                        data += chunk;
-                    })
-                    .on("end", () => {
-                        try {
-                            resolve(JSON.parse(data));
-                        } catch (err) {
-                            reject("Corrupted response");
-                        }
-                    });
+                res.on("data", chunk => {
+                    data += chunk;
+                }).on("end", () => {
+                    try {
+                        resolve(JSON.parse(data));
+                    } catch (err) {
+                        reject("Corrupted response");
+                    }
+                });
             }).on("error", err => {
                 // Error on request object, returned by http
                 logger.debug(`Client.getMeta: ${err}`);
                 reject("Error connecting to server.");
             });
+        }).catch(err => {
+            // If previous promise is rejected then req might still not have
+            // been aborted.
+            if (req) req.abort();
+            throw err;
         });
     }
 
@@ -639,8 +654,13 @@ export default class Client {
             return Promise.reject("URL not passed.");
         }
 
+        // We'll need to access req later in the Promise chain, so we maintain
+        // a external reference
+        let req;
+
         return new Promise((resolve, reject) => {
-            http(url, res => {
+            // res is IncomingMessage while req is ClientRequest
+            req = http(url, res => {
                 let data = "";
 
                 if (res.statusCode !== 200) {
@@ -659,34 +679,42 @@ export default class Client {
                 if (res.headers["content-type"] !== "application/json")
                     reject("URL does not correspond to directory");
 
-                res
-                    .on("data", chunk => {
-                        data += chunk;
-                    })
-                    .on("end", () => {
-                        try {
-                            resolve(JSON.parse(data));
-                        } catch (err) {
-                            reject("Corrupted response");
-                        }
-                    });
+                res.on("data", chunk => {
+                    data += chunk;
+                }).on("end", () => {
+                    try {
+                        resolve(JSON.parse(data));
+                    } catch (err) {
+                        reject("Corrupted response");
+                    }
+                });
             }).on("error", err => {
                 // Error on request object, returned by http
                 logger.debug(`Client.getDirectoryInfo: ${err}`);
                 reject("Error connecting to server.");
             });
-        }).then(data => {
-            if (!data.children)
-                throw Error("URL does not correspond to directory");
+        }).then(
+            data => {
+                // If previous promise isn't rejected then the HTTP request was
+                // completed. No need to abort response if any error occurs now.
+                if (!data.children)
+                    throw Error("URL does not correspond to directory");
 
-            let origin = new URL(url).origin;
+                let origin = new URL(url).origin;
 
-            data.children = data.children.map(child => ({
-                ...child,
-                url: `${origin}/${child.id}`
-            }));
+                data.children = data.children.map(child => ({
+                    ...child,
+                    url: `${origin}/${child.id}`
+                }));
 
-            return data;
-        });
+                return data;
+            },
+            err => {
+                // If control reaches here, our HTTP request was stopped midway
+                // We abort our request
+                if (req) req.abort();
+                throw err;
+            }
+        );
     }
 }

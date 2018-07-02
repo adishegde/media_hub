@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 # first build using yarn
-yarn build
+yarn build-cli
 
-buildPath="$PWD/build"
+buildPath="$PWD/cli-build"
 binPath="$PWD/bin"
 
 osList='win macos linux'
