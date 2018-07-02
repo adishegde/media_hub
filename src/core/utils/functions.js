@@ -21,3 +21,24 @@ export function isLocalIP(ipaddr) {
         iface.some(naddr => naddr.address === ipaddr)
     );
 }
+
+// Returns the first non external IPv4 address
+export function guessIp() {
+    // Get network interfaces
+    let ifaces = Os.networkInterfaces();
+
+    // Loop through all interface names like 'en0', 'lo0' etc,.
+    for (let ifname of Object.keys(ifaces)) {
+        // Loop through the IP address of the ifname interface
+        for (let iface of ifaces[ifname]) {
+            // If iface is internal or is IPv6 continue to next address
+            if (iface.internal || iface.family !== "IPv4") continue;
+
+            // We have found an external IPv4 address
+            return iface.address;
+        }
+    }
+
+    // Default is loopback
+    return "127.0.0.1";
+}
