@@ -1,5 +1,6 @@
 // Client makes the request
 
+import Net from "net";
 import Dgram from "dgram";
 import * as Fs from "fs";
 import Winston from "winston";
@@ -12,6 +13,7 @@ import {
     DEFAULT_CLIENT as DEFAULT,
     DEFAULT_UDP_PORT,
     DEFAULT_NETWORK,
+    DEFAULT_MULTICAST,
     DEFAULT_HTTP_PORT
 } from "../utils/constants";
 
@@ -201,6 +203,8 @@ export default class Client {
     //   be made. Default value is "255.255.255.255".
     //   - timeout [optional]: The time to listen for responses to udp
     //   requests. Default value is 3 seconds
+    //   - useBroadcast [optional]: Use broadcast instead of multicast
+    //   - mcAddr [optional]: Mutlicast address.
     //   - incoming [optional]: The default incoming directory for files. If
     //   not given path must be provided when downloading.
     constructor({
@@ -210,6 +214,8 @@ export default class Client {
         network = DEFAULT_NETWORK,
         broadcastIp = DEFAULT.broadcastIp,
         timeout = DEFAULT.timeout,
+        useBroadcast = DEFAULT.useBroadcast,
+        mcAddr = DEFAULT_MULTICAST,
         incoming
     }) {
         if (incoming) {
@@ -226,6 +232,17 @@ export default class Client {
                 incoming = null;
             }
         }
+        if (useBroadcast) {
+            logger.debug(
+                "Client: useBroadcast is true. Will send only broadcast messages."
+            );
+        }
+        if (!Net.isIPv4(mcAddr)) {
+            logger.debug(
+                "Client: mcAddr is not of IPv4 type. Will send only broadcast messages."
+            );
+            useBroadcast = true;
+        }
 
         this.port = port;
         this.udpPort = udpPort;
@@ -234,6 +251,15 @@ export default class Client {
         this.broadcastIp = broadcastIp;
         this.timeout = timeout;
         this.incoming = incoming;
+
+        // If broadcast requests have to be sent override broadcastIp
+        // Thus useBroadcast and mcAddr are not stored
+        if (!useBroadcast) {
+            logger.debug(
+                `Client: Will send multicast search requests to ${mcAddr}`
+            );
+            this.broadcastIp = mcAddr;
+        }
     }
 
     // Broadcast search request
@@ -311,11 +337,17 @@ export default class Client {
                 // Set broadcast
                 socket.setBroadcast(true);
 
+                // Max number of hops is 128
+                socket.setTTL(128);
+                socket.setMulticastTTL(128);
+
                 let addr = socket.address();
                 logger.debug(
                     `Client.search: search request for ${request.search}:${
                         request.param
-                    } sent via ${addr.address}:${addr.port}`
+                    } sent via ${addr.address}:${addr.port} to ${
+                        this.broadcastIp
+                    }:${this.udpPort}`
                 );
 
                 // Send request via socket
