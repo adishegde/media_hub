@@ -42,6 +42,9 @@ export default class HTTPService {
             throw Error("Ignore is not an array");
         }
 
+        // Initially service is not running
+        this.running = false;
+
         this.metaData = metaData;
         this.port = port;
         this.share = share;
@@ -55,31 +58,75 @@ export default class HTTPService {
 
                 socket.end("HTTP/1.1 400 Bad Request\r\n\r\n");
             })
-            .on("listening", () => {
-                let addr = this.server.address();
-                logger.info(
-                    `HTTPService: listening on ${addr.address}:${addr.port}`
-                );
-            })
             .on("error", err => {
+                // Root error handler. Logs all errors
                 logger.error(`HTTPService: ${err}`);
                 logger.debug(`HTTPService: ${err.stack}`);
-            })
-            .on("close", () => {
-                logger.info("HTTPService: Service stopped");
             });
     }
 
     // Starts the service
     start() {
         logger.debug("HTTPService: Start function called");
-        this.server.listen(this.port);
+
+        return new Promise((resolve, reject) => {
+            // Start service only if it isn't running
+            // Note that calling start for the 2nd time before the listen
+            // event's callback is called will result in an error. We should
+            // wait for the returned Promise to resolve for proper
+            // behaviour.
+            if (!this.running) {
+                this.server.listen(this.port, () => {
+                    let addr = this.server.address();
+                    // Service has started once socket is listening
+                    this.running = true;
+                    logger.info(
+                        `HTTPService: listening on ${addr.address}:${addr.port}`
+                    );
+                    resolve(true);
+                });
+
+                // We register a one time error listener in case listen faces an
+                // error. In case of successful listen the listner might
+                // be called for some other error event. But our promise
+                // is already resolved so it doesn't matter.
+                this.server.once("error", err => {
+                    // Error is logged by root handler
+                    reject(err);
+                });
+            } else {
+                // If service was already running return false
+                resolve(false);
+            }
+        });
     }
 
     // Stops the service
     stop() {
         logger.debug("HTTPService: Stop function called");
-        this.server.close();
+
+        return new Promise((resolve, reject) => {
+            // Note that calling stop for the 2nd time before the first call's
+            // Promise is resolved will lead to an error. We should wait for the
+            // first promise to resolve.
+            if (this.running) {
+                this.server.close(() => {
+                    logger.info("HTTPService: Service stopped");
+                    this.running = false;
+                    resolve(true);
+                });
+
+                // We register one time error handler to catch any errors
+                // that might occur when closing the server.
+                this.server.once("error", () => {
+                    // Error is logged by root handler
+                    reject(false);
+                });
+            } else {
+                // If server was already stopped
+                resolve(false);
+            }
+        });
     }
 
     // Handles all incoming requests

@@ -94,7 +94,8 @@ export default class Server {
             // Stop if initialized
             if (this.closeDb)
                 this.db.close(err => {
-                    logger.error(`Server: Error while closing db ${err}`);
+                    if (err)
+                        logger.error(`Server: Error while closing db ${err}`);
                 });
             if (this.udpServer) this.udpServer.stop();
             if (this.fileIndex) this.fileIndex.stop();
@@ -106,18 +107,24 @@ export default class Server {
 
     // Start services
     start() {
-        this.fileIndex.start();
-        this.udpServer.start();
-        this.httpServer.start();
+        return {
+            fileIndex: this.fileIndex.start(),
+            udp: this.udpServer.start(),
+            http: this.httpServer.start()
+        };
     }
 
     stop() {
-        this.fileIndex.stop();
-        this.udpServer.stop();
-        this.httpServer.stop();
-        if (this.closeDb)
-            this.db.close(err => {
-                logger.error(`Server.stop: Error while closing db ${err}`);
+        let stopPromises = {};
+
+        if (this.closeDb && this.db)
+            stopPromises.db = this.db.close().then(() => {
+                logger.info("Server.stop: Db connection closed.");
             });
+        if (this.udpServer) stopPromises.udp = this.udpServer.stop();
+        if (this.fileIndex) stopPromises.fileIndex = this.fileIndex.stop();
+        if (this.httpServer) stopPromises.http = this.httpServer.stop();
+
+        return stopPromises;
     }
 }
