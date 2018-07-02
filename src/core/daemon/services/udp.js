@@ -2,13 +2,15 @@
 
 import Dgram from "dgram";
 import Winston from "winston";
+import Net from "net";
 
 import {
     DEFAULT_NETWORK,
     DEFAULT_UDP_PORT,
+    DEFAULT_MULTICAST,
     DEFAULT_SERVER as DEFAULT
 } from "../../utils/constants";
-import { isLocalIP } from "../../utils/functions";
+import { isLocalIP, guessIp } from "../../utils/functions";
 
 /* The UDP service listens on a given port and responds to incoming search
  * queries on the port of the client. Thus it makes no assumption about the
@@ -24,22 +26,44 @@ export default class UDPservice {
     //  - An object having properties:
     //    - port [optional]: Port at which the UDP server should listen.
     //    - network [optional]: Identifier for network
+    //    - selfRespond [optional]: If true daemon responds to search requests
+    //    from same machine
+    //    - mcAddr [optional]: Multicast address
+    //    - ip [optional]: IPv4 address of machine. If falsy guesses ip. This
+    //    ip will be used as the multicast interface.
     constructor(
         searchHandler,
         {
             udpPort: port = DEFAULT_UDP_PORT,
             network = DEFAULT_NETWORK,
-            selfRespond = DEFAULT.selfRespond
+            selfRespond = DEFAULT.selfRespond,
+            mcAddr = DEFAULT_MULTICAST,
+            ip = DEFAULT.ip
         }
     ) {
         if (!searchHandler) {
             logger.error("SearchHandler not passed to UDPService constructor.");
             throw Error("SearchHandler not passed to UDPService constructor.");
         }
+        // If ip is not an IPv4 address
+        if (!Net.isIPv4(ip)) {
+            // Gues ip of system using network interfaces
+            ip = guessIp();
+            logger.info(`UDPService: IP is not IPv4 type. IP guessed to ${ip}`);
+        }
+        if (!Net.isIPv4(mcAddr)) {
+            // If mcAddr is not IPv4 type then multicast is disabled
+            logger.info(
+                `UDPService: Multicast address is not IPv4 type. Using default address ${DEFAULT_MULTICAST}`
+            );
+            mcAddr = DEFAULT_MULTICAST;
+        }
 
         // Initially service is not running
         this.running = false;
 
+        this.ip = ip;
+        this.mcAddr = mcAddr;
         this.searchHandler = searchHandler;
         this.port = port;
         this.network = network;
@@ -81,6 +105,12 @@ export default class UDPservice {
                     logger.info(
                         `UDPService: Listening on ${addr.address}:${addr.port}`
                     );
+
+                    // Add multicast membership via ip provided as multicast
+                    // interface. With this, socket listens to both multicast
+                    // messages (at mcAddr) and broadcast messages.
+                    this.socket.addMembership(this.mcAddr, this.ip);
+
                     resolve(true);
                 });
 

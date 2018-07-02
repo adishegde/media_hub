@@ -12,6 +12,7 @@ import {
     DEFAULT_SERVER as DEFAULT,
     DEFAULT_NETWORK,
     DEFAULT_HTTP_PORT,
+    DEFAULT_MULTICAST,
     DEFAULT_UDP_PORT
 } from "../core/utils/constants";
 
@@ -86,6 +87,15 @@ Program.version("0.3.0")
         DEFAULT.ignore
     )
     .option("--selfRespond", "Respond to search requests from same machine.")
+    .option(
+        "--mcAddr <ip>",
+        "Multicast address to which daemon will subscribe. IP should belong to IPv4 family.",
+        DEFAULT_MULTICAST
+    )
+    .option(
+        "--ip <ip>",
+        "Multicast interface for subscribing to multicast address. If not provided a random IPv4 external IP is guessed."
+    )
     .parse(process.argv);
 
 const SERVEROPTS = [
@@ -98,7 +108,9 @@ const SERVEROPTS = [
     "dbwriteInterval",
     "maxResults",
     "ignore",
-    "selfRespond"
+    "selfRespond",
+    "mcAddr",
+    "ip"
 ];
 
 // Final options, i.e. combination of those in command line and config file

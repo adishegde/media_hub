@@ -10,6 +10,7 @@ import {
     DEFAULT_CLIENT as DEFAULT,
     DEFAULT_NETWORK,
     DEFAULT_HTTP_PORT,
+    DEFAULT_MULTICAST,
     DEFAULT_UDP_PORT
 } from "../core/utils/constants";
 
@@ -52,7 +53,16 @@ Program.version("0.3.0")
         DEFAULT.timeout
     )
     .option("-i, --incoming <path>", "Default download directory.")
-    .option("-d, --debug", "Enable debug messages.");
+    .option("-d, --debug", "Enable debug messages.")
+    .option(
+        "--mcAddr <ip>",
+        "Multicast address to which client will send requests. IP should belong to IPv4 family. If not provided broadcast is used.",
+        DEFAULT_MULTICAST
+    )
+    .option(
+        "--useBroadcast",
+        "Force broadcast requests irrespective of multicast configuration"
+    );
 
 Program.command("search <query> [param]")
     .description(
@@ -218,26 +228,7 @@ function setup() {
     }
     addConsoleLog("client", logLevel);
 
-    // Extrack necessary properties
-    let {
-        clientPort,
-        udpPort,
-        httpPort,
-        network,
-        broadcastIp,
-        timeout,
-        incoming
-    } = Program;
-
-    return {
-        clientPort,
-        udpPort,
-        httpPort,
-        network,
-        broadcastIp,
-        timeout,
-        incoming
-    };
+    return Program;
 }
 
 Program.parse(process.argv);
