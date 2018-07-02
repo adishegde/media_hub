@@ -47,6 +47,7 @@
         "fuse.js": "^3.2.0",
         "level": "^4.0.0",
         "mime-types": "^2.1.18",
+        "node-cleanup": "^2.1.2",
         "preact": "^8.2.9",
         "preact-compat": "^3.18.0",
         "react-router": "^4.3.1",
