@@ -59,13 +59,17 @@ The client program can be used without specifiying any of the options.
 
 It has the following subcommands:
 
-*   **search**: This makes a UDP broadcast search request and displays the
-response provided by all daemon instances on the LAN. e.g. The following
+*   **search**: This makes a UDP broadcast\* (see below) search request and displays
+the response provided by all daemon instances on the LAN. e.g. The following
 command searches for files with name as media. Fuzzy search is used
 for matching queries by the daemon. Use the `--help` option with the subcommand
 to see more options.
 
     `./client search media name`
+
+\* - With v0.4.0 there is support for both broadcast and multicast search
+requests. Requests default to multicast. To force use broadcast use the
+`--useBroadcast` option.
 
 *   **download**: This downloads a file or directory. The directory can be
 specified by the `--incoming` option or as an argument after the URL. If `path`
