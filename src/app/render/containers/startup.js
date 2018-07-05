@@ -1,4 +1,6 @@
-/* This container is used to initialize the app on startup */
+/* This container is used to initialize the app on startup. This component
+ * doesn't interact with the redux store at all since the config data is
+ * obtained from main process */
 import React from "react";
 import { remote, ipcRenderer } from "electron";
 import {
@@ -14,6 +16,9 @@ import {
 } from "semantic-ui-react";
 import { withRouter } from "react-router";
 
+// The config should be obtained from the export of main process. It is not
+// stored in the redux store to keep the config file as the single source of
+// truth
 const config = remote.getGlobal("config");
 const dialog = remote.dialog;
 
