@@ -270,7 +270,7 @@ export default class Client {
     //
     //  Return Value:
     //   A Promise that is resolved to the results of the search
-    search(searchString, param) {
+    search(searchString, page = 1, param = "default") {
         return new Promise((resolve, reject) => {
             if (typeof searchString !== "string") {
                 logger.debug(
@@ -282,7 +282,8 @@ export default class Client {
             let request = {
                 network: this.network,
                 search: searchString,
-                param: param || "default"
+                param,
+                page
             };
 
             let requestString = JSON.stringify(request, null, 0);
@@ -310,7 +311,8 @@ export default class Client {
                         if (
                             response.network === request.network &&
                             response.search === request.search &&
-                            response.param === request.param
+                            response.param === request.param &&
+                            response.page === request.page
                         ) {
                             let url = `http://${rinf.address}:${this.httpPort}`;
 
@@ -318,7 +320,8 @@ export default class Client {
                             response.results.forEach(result => {
                                 resultAcc.push({
                                     name: result[0],
-                                    url: `${url}/${result[1]}`
+                                    url: `${url}/${result[1]}`,
+                                    downloads: result[2]
                                 });
                             });
                         }

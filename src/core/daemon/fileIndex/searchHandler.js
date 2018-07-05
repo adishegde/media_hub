@@ -48,57 +48,13 @@ export default class SearchHandler {
         this.ignore = ignore.map(exp => new RegExp(exp));
     }
 
-    // Fuzzy search on name of files
-    // Params:
-    //  - search: Search string
-    searchByName(search) {
-        // Options for fuzzy search
-        // Many of the values are defaults picked up from the site since they
-        // perform well for tested meta data.
-        let options = {
-            shouldSort: true,
-            includeScore: false,
-            threshold: 0.6,
-            location: 0,
-            distance: 100,
-            maxPatternLength: 32,
-            minMatchCharLength: 1,
-            keys: ["name"]
-        };
-
-        return this.metaData.getFileList().then(files => {
-            let fuse = new Fuse(files, options);
-            return this._filterSearches(fuse.search(search));
-        });
-    }
-
-    // Fuzzy search on tags of files
-    // Params:
-    //  - search: Search string
-    searchByTag(search) {
-        let options = {
-            shouldSort: true,
-            includeScore: false,
-            threshold: 0.6,
-            location: 0,
-            distance: 100,
-            maxPatternLength: 32,
-            minMatchCharLength: 1,
-            keys: ["tag"]
-        };
-
-        return this.metaData.getFileList().then(files => {
-            let fuse = new Fuse(files, options);
-            return this._filterSearches(fuse.search(search));
-        });
-    }
-
     // Weighted fuzzy search on multiple properties
     // Params:
     //  - search: Search string
-    search(search) {
+    search(search, param = "default", page = 1) {
         // Name of file is given a weightage of 70% and its tag a weightage of
         // 30%
+        // Options for matching both tags and name
         let options = {
             shouldSort: true,
             includeScore: false,
@@ -119,9 +75,24 @@ export default class SearchHandler {
             ]
         };
 
+        // In case of different params change options appropriately
+        if (param === "tag") {
+            options.keys = ["tags"];
+        } else if (param === "name") {
+            options.keys = ["name"];
+        }
+
         return this.metaData.getFileList().then(files => {
             let fuse = new Fuse(files, options);
-            return this._filterSearches(fuse.search(search));
+            let results = this._filterSearches(fuse.search(search));
+
+            if (this.maxResults < 0) return results;
+            // Return correct page
+            else
+                return results.slice(
+                    (page - 1) * this.maxResults,
+                    page * this.maxResults
+                );
         });
     }
 
@@ -138,7 +109,6 @@ export default class SearchHandler {
             result => !this.ignore.some(re => re.test(result.path))
         );
 
-        if (this.maxResults < 0) return results;
-        return results.slice(0, this.maxResults);
+        return results;
     }
 }

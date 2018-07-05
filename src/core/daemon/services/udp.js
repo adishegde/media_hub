@@ -198,34 +198,44 @@ export default class UDPservice {
             }`
         );
 
-        let resultProm;
-
-        switch (query.param) {
-            case "name":
-                resultProm = this.searchHandler.searchByName(query.search);
-                break;
-            case "tag":
-                resultProm = this.searchHandler.searchByTag(query.search);
-                break;
-            default:
-                resultProm = this.searchHandler.search(query.search);
-        }
+        let resultProm = this.searchHandler.search(
+            query.search,
+            query.param,
+            query.page
+        );
 
         // searchHandler returns a Promise
         return resultProm.then(results => {
             // Send only name and id of file in response
-            results = results.map(result => [result.name, result.id]);
+            results = results.map(result => [
+                result.name,
+                result.id,
+                result.downloads
+            ]);
+
+            // If results is empty don't send anything
+            if (results.length === 0) return false;
+
             // Complete response object
+            // All undefined properties will be removed when we stringify
+            // response
             let response = {
                 network: query.network,
                 search: query.search,
                 param: query.param,
+                page: query.page,
                 results: results
             };
             response = JSON.stringify(response, null, 0);
 
             // Send response to destination port and address
             this.socket.send(response, rinf.port, rinf.address);
+
+            // Return true if response was sent
+            // Note that this does not mean that response was
+            // successfully sent since we are not checking the result of
+            // socket.send.
+            return true;
         });
     }
 }
