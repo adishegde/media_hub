@@ -10,9 +10,9 @@ import {
     Button,
     Icon
 } from "semantic-ui-react";
-import Logo from "app/assets/Logo.png";
 
-import SearchBar from "app/render/components/search";
+import Logo from "app/assets/Logo.png";
+import SearchBar from "app/render/components/SearchBar";
 
 class Home extends React.Component {
     constructor(props) {

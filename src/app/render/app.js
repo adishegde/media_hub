@@ -3,9 +3,9 @@ import * as Path from "path";
 import { remote } from "electron";
 import { Switch, Route } from "react-router";
 
-import Startup from "app/render/containers/startup";
-import Home from "app/render/containers/home";
-import SearchResult from "app/render/containers/searchResults";
+import Startup from "app/render/containers/Startup";
+import Home from "app/render/containers/Home";
+import SearchResult from "app/render/containers/SearchResults";
 
 import { addLogFile } from "core/utils/log";
 import { CLIENT_LOG } from "app/utils/constants";
