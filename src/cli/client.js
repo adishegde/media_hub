@@ -16,7 +16,7 @@ import {
 
 const logger = Winston.loggers.get("client");
 
-Program.version("0.4.0")
+Program.version("0.4.1")
     .usage("[options] <command> [<args>]")
     .option(
         "-p, --clientPort <port>",

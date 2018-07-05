@@ -21,7 +21,7 @@ const logger = Winston.loggers.get("daemon");
 const share = [];
 const ignore = [...DEFAULT.ignore];
 
-Program.version("0.4.0")
+Program.version("0.4.1")
     .usage("[options]")
     .option(
         "-u, --udpPort <port>",
