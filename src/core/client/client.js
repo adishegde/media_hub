@@ -320,7 +320,8 @@ export default class Client {
                             response.results.forEach(result => {
                                 resultAcc.push({
                                     name: result[0],
-                                    url: `${url}/${result[1]}`
+                                    url: `${url}/${result[1]}`,
+                                    downloads: result[2]
                                 });
                             });
                         }

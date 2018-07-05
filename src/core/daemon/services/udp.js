@@ -207,7 +207,11 @@ export default class UDPservice {
         // searchHandler returns a Promise
         return resultProm.then(results => {
             // Send only name and id of file in response
-            results = results.map(result => [result.name, result.id]);
+            results = results.map(result => [
+                result.name,
+                result.id,
+                result.downloads
+            ]);
 
             // If results is empty don't send anything
             if (results.length === 0) return false;
