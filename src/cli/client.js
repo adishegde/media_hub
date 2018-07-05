@@ -64,32 +64,33 @@ Program.version("0.4.0")
         "Force broadcast requests irrespective of multicast configuration"
     );
 
-Program.command("search <query> [param]")
+Program.command("search <query> [page] [param]")
     .description(
-        "Search for files having [param] matching <query>. [param] can be tags/name. Default matches both."
+        "Search for files having [param] matching <query>. [param] can be tags/name. Default matches both. [page] is the pagination parameter."
     )
-    .action((query, param) => {
+    .action((query, page, param) => {
         let options = setup();
 
         const ct = new Client(options);
         console.log(
             `Searching for files with ${param ||
-                "names and tags"} as "${query}"\n`
+                "names and tags"} as "${query}".`
         );
+        console.log(`Retrieving page ${page || 1}...\n`);
 
         // Display results
-        ct.search(query, param)
+        ct.search(query, page, param)
             .then(data => {
                 if (data.length === 0) {
                     console.log("No results found.");
                 } else {
                     let table = new Table({
-                        head: ["Name", "URL"]
+                        head: ["Name", "Downloads", "URL"]
                     });
 
                     // Add rows to table. With capitalized columns
                     data.forEach(res => {
-                        table.push([res.name, res.url]);
+                        table.push([res.name, res.downloads, res.url]);
                     });
                     console.log(table.toString());
                 }
