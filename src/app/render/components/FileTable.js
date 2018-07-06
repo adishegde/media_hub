@@ -46,6 +46,8 @@ function FileItem({ file }) {
 }
 
 export default function FileTable({ header, files }) {
+    if (!files) return null;
+
     return (
         <Table celled stripped>
             <Table.Header>
