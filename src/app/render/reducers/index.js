@@ -1,7 +1,8 @@
 /* Root reducer */
 import { combineReducers } from "redux";
 
-// Dummy reducer
-export default function rootReducer(state = {}, action) {
-    return state;
-}
+import search from "./search";
+
+export default combineReducers({
+    search
+});
