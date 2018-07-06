@@ -1,6 +1,5 @@
-/* Home screen page */
+/* Home page component */
 import React from "react";
-import { withRouter } from "react-router";
 import {
     Input,
     Grid,
@@ -10,18 +9,17 @@ import {
     Button,
     Icon
 } from "semantic-ui-react";
+
 import Logo from "app/assets/Logo.png";
+import SearchBar from "app/render/components/SearchBar";
 
-import SearchBar from "app/render/components/search";
-
-class Home extends React.Component {
+export default class Home extends React.Component {
     constructor(props) {
         super(props);
 
         this.state = {
             search: "",
-            param: "default",
-            searching: false
+            param: "default"
         };
 
         this.onChange = this.onChange.bind(this);
@@ -46,7 +44,6 @@ class Home extends React.Component {
                             <SearchBar
                                 search={search}
                                 param={param}
-                                loading={searching}
                                 onChange={this.onChange}
                                 onSearch={this.onSearch}
                             />
@@ -65,17 +62,12 @@ class Home extends React.Component {
     }
 
     onSearch() {
-        this.setState({
-            searching: true
-        });
-
         let { search, param } = this.state;
 
-        // On search we route to the result page. The result page is
-        // responsible for actually sending the search requests.
-        // We send the search and param values through location state.
-        this.props.history.push("/results", { search, param });
+        // Call onSearch prop with search string and param
+        this.props.onSearch({
+            search,
+            param
+        });
     }
 }
-
-export default withRouter(Home);
