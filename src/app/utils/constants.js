@@ -13,10 +13,10 @@ import {
 export const CONFIG_FILE = "settings.json";
 
 // Name of daemon log file
-export const DAEMON_LOG = "daemon.error.log";
+export const DAEMON_LOG = "daemon.log";
 
 // Name of client log file
-export const CLIENT_LOG = "client.error.log";
+export const CLIENT_LOG = "client.log";
 
 export const DB = "mh-meta";
 
