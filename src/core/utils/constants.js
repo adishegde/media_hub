@@ -9,7 +9,7 @@ export const DEFAULT_SERVER = {
     dbWriteInterval: 10000,
     db: "./media_hub-meta",
     maxResults: 10,
-    ignore: [/(^|\/)\.[^\/\.]/],
+    ignore: ["(^|\\/)\\.[^\\/\\.]"],
     selfRespond: false,
     ip: undefined // Default behaviour is to guess IP
 };

@@ -46,7 +46,7 @@ if (process.env.MH_ENV === "development") {
     });
 
     // Use info log level in development mode
-    logLevel = "info";
+    logLevel = "debug";
 }
 
 function createWindow() {
@@ -96,8 +96,7 @@ function init() {
         let clientLogFile = Path.join(userDataPath, CLIENT_LOG);
 
         // Add daemon and client log files
-        addLogFile("daemon", daemonLogFile, "error");
-        addLogFile("client", clientLogFile, "error");
+        addLogFile("daemon", daemonLogFile, logLevel);
 
         // Create db
         // Once created here, it's not closed for the lifetime of the app
@@ -110,6 +109,11 @@ function init() {
         if (Object.keys(config._).length === 0) {
             // Config file didn't exist or was empty. We assign default settings
             config._ = { ...DEFAULT_CONFIG, db: dbPath };
+
+            // Enable self respond in development mode
+            if (process.env.MH_ENV === "development")
+                config._.selfRespond = true;
+
             // Write default settings to config file
             config.write();
         }
@@ -149,6 +153,7 @@ function createServer() {
         // Create new server using app settings
         // Passes existing db instance
         server = new Server(db, config._);
+        server.start();
     } catch (err) {
         // if error occurs then emit error onto browser window
         mainWindow.webContents.send("server-error", err);
