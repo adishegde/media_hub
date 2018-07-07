@@ -32,7 +32,7 @@ function FileItem({ file }) {
     // common extension.
     if (videoExt.includes(ext)) icon = "video";
     else if (audioExt.includes(ext)) icon = "music";
-    else if (ext) icon = "file";
+    else if (ext) icon = "file outline";
 
     return (
         <Table.Row>
@@ -49,9 +49,9 @@ export default function FileTable({ header, files }) {
     if (!files) return null;
 
     return (
-        <Table celled stripped>
+        <Table celled stripped size="small">
             <Table.Header>
-                <Table.Row>
+                <Table.Row textAlign="center">
                     <Table.HeaderCell colSpan="2">{header}</Table.HeaderCell>
                 </Table.Row>
                 <Table.Row>

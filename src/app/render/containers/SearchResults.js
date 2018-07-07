@@ -6,7 +6,8 @@ import SearchResultsComponent from "app/render/components/SearchResults";
 import {
     isSearching,
     getSearchResult,
-    getCurrentPage
+    getCurrentPage,
+    getSearchError
 } from "app/render/selectors/index";
 import { search, fetchResultPage } from "app/render/actions/search";
 
@@ -18,7 +19,8 @@ function mapStateToProps(state) {
     return {
         searching: isSearching(state, page),
         results: getSearchResult(state, page),
-        page
+        page,
+        error: getSearchError(state, page)
     };
 }
 
