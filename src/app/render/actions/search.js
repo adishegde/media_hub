@@ -17,6 +17,14 @@ const config = remote.getGlobal("config");
 export const START_SEARCH = "START_SEARCH";
 export const RECEIVE_RESULTS = "RECEIVE_RESULTS";
 export const ERROR_SEARCH = "ERROR_SEARCH";
+export const CLEAR_CACHE = "CLEAR_CACHE";
+
+// Clears results cache in store
+function clearCache() {
+    return {
+        type: CLEAR_CACHE
+    };
+}
 
 // Used to denote the beginning of a search query
 // query contains search, param and page
@@ -61,9 +69,13 @@ function errorSearch(query, error) {
 
 // query contains search, param and page
 // Used to do a fresh fetch of results. If different pages of same search
-// string and param is required then use fetchResultPage
+// is required then use fetchResultPage
 export function search(query) {
     return dispatch => {
+        // Clear cache since new search
+        dispatch(clearCache());
+
+        // Starting search
         dispatch(startSearch(query));
 
         // Create new client form config data
@@ -79,6 +91,8 @@ export function search(query) {
     };
 }
 
+// Fetch current page + delta
+// Uses cache if exists
 export function fetchResultPage(delta) {
     return (dispatch, getState) => {
         // Get redux search state
@@ -106,7 +120,19 @@ export function fetchResultPage(delta) {
             }
         } else {
             // If the required page is not already fetched then fetch it
-            dispatch(search(query));
+            // Starting search
+            dispatch(startSearch(query));
+
+            // Create new client form config data
+            let client = new Client(config._);
+            client
+                .search(query.search, query.page, query.param)
+                .then(results => {
+                    dispatch(receiveResults(query, results));
+                })
+                .catch(err => {
+                    dispatch(errorSearch(query, err));
+                });
         }
     };
 }

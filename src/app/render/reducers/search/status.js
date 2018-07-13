@@ -2,7 +2,8 @@
 import {
     START_SEARCH,
     RECEIVE_RESULTS,
-    ERROR_SEARCH
+    ERROR_SEARCH,
+    CLEAR_CACHE
 } from "app/render/actions/search";
 
 // Similar to an enum to define request status
@@ -17,6 +18,9 @@ export const statusCodes = {
 // been sent but response has not been received.
 export default function status(state = {}, action) {
     switch (action.type) {
+        case CLEAR_CACHE:
+            return {};
+
         case START_SEARCH:
             return { ...state, [action.query.page]: statusCodes.searching };
 
