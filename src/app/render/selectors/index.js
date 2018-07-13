@@ -1,9 +1,9 @@
 /* Functions exported here take the entire state as argument */
-import { statusCodes } from "app/render/reducers/search/status";
+import { statusCodes } from "app/utils/constants";
 
 export function isSearching(state, page) {
     if (!state.search || !state.search.status) return false;
-    return state.search.status[page] === statusCodes.searching;
+    return state.search.status[page] === statusCodes.loading;
 }
 
 export function isSearchPageRequested(state, page) {

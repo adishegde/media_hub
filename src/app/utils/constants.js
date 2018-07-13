@@ -29,3 +29,10 @@ export const DEFAULT_CONFIG = {
     udpPort: DEFAULT_UDP_PORT,
     httpPort: DEFAULT_HTTP_PORT
 };
+
+// Similar to an enum to define request status
+export const statusCodes = {
+    loading: 1,
+    done: 2,
+    error: 3
+};
