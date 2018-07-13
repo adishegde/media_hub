@@ -5,10 +5,10 @@ import { connect } from "react-redux";
 import SearchResultsComponent from "app/render/components/SearchResults";
 import {
     isSearching,
-    getSearchResult,
+    getResult,
     getCurrentPage,
-    getSearchError
-} from "app/render/selectors/index";
+    getError
+} from "app/render/selectors/search";
 import { search, fetchResultPage } from "app/render/actions/search";
 
 // The source of truth for the results to be displayed is the query object
@@ -18,9 +18,9 @@ function mapStateToProps(state) {
 
     return {
         searching: isSearching(state, page),
-        results: getSearchResult(state, page),
+        results: getResult(state, page),
         page,
-        error: getSearchError(state, page)
+        error: getError(state, page)
     };
 }
 
