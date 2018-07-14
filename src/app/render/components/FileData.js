@@ -22,7 +22,8 @@ function formatBytes(bytes) {
 // A table for displaying file data
 export default function FileData({
     data: { name, type, tags, downloads, description, size, children },
-    loading
+    loading,
+    onFileItemClick
 }) {
     let tagLabels = "-";
 
@@ -44,7 +45,10 @@ export default function FileData({
                     basic
                     style={{ maxHeight: "30vh", overflowY: "auto" }}
                 >
-                    <FileList files={children} />
+                    <FileList
+                        files={children}
+                        onFileItemClick={onFileItemClick}
+                    />
                 </Segment>
             </Segment>
         );
@@ -57,7 +61,7 @@ export default function FileData({
                 <Header as="h4">{`${
                     type === "file" ? "File" : "Directory"
                 } Details`}</Header>
-                <Segment basic style={{ maxHeight: "40vh", overflowY: "auto" }}>
+                <Segment basic style={{ maxHeight: "30vh", overflowY: "auto" }}>
                     <Table definition compact>
                         <Table.Body>
                             <Table.Row>

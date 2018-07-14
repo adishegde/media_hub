@@ -34,8 +34,8 @@ function mapDispatchToProps(dispatch, { history }) {
         onSearch: query => {
             dispatch(search(query));
         },
-        onFileItemClick: url => {
-            dispatch(displayFile(url));
+        onFileItemClick: file => {
+            dispatch(displayFile(file));
             history.push("/file");
         }
     };

@@ -31,5 +31,14 @@ export function getData(state, url) {
 }
 
 export function getDisplayURL(state) {
+    if (!state.files || !state.files.display) return "";
+
+    // Return last element of display list
+    return state.files.display[state.files.display.length - 1].url;
+}
+
+export function getDisplayList(state) {
+    if (!state.files || !state.files.display) return [];
+
     return state.files.display;
 }

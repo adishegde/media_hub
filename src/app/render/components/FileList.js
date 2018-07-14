@@ -5,7 +5,7 @@ import { List, Icon } from "semantic-ui-react";
 
 import { videoExt, audioExt } from "app/utils/constants";
 
-function FileItem({ file }) {
+function FileItem({ file, onClick }) {
     // Assume folder by default
     let icon = "folder";
     let ext = Path.extname(file.name);
@@ -17,19 +17,25 @@ function FileItem({ file }) {
     else if (ext) icon = "file outline";
 
     return (
-        <List.Item>
+        <List.Item
+            onClick={() => {
+                onClick(file);
+            }}
+        >
             <List.Icon name={icon} />
             {file.name}
         </List.Item>
     );
 }
 
-export default function FileTable({ header, files, onFileItemClick }) {
+export default function FileList({ header, files, onFileItemClick }) {
     if (!files) return null;
 
     return (
         <List divided relaxed>
-            {files.map((file, ind) => <FileItem key={ind} file={file} />)}
+            {files.map((file, ind) => (
+                <FileItem key={ind} file={file} onClick={onFileItemClick} />
+            ))}
         </List>
     );
 }

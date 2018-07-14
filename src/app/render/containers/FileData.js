@@ -9,6 +9,7 @@ import {
     getError
 } from "app/render/selectors/files";
 import FileDataComponent from "app/render/components/FileData";
+import { displayFile } from "app/render/actions/files";
 
 // The file whose data is to be diplayed is decided by the display property of
 // the files state.
@@ -21,4 +22,18 @@ function mapStateToProps(state) {
     };
 }
 
-export default withRouter(connect(mapStateToProps)(FileDataComponent));
+function mapDispatchToProps(dispatch) {
+    return {
+        onFileItemClick: file => {
+            // We need to append to display list, hence pos is negative
+            dispatch(displayFile(file, -1));
+        }
+    };
+}
+
+export default withRouter(
+    connect(
+        mapStateToProps,
+        mapDispatchToProps
+    )(FileDataComponent)
+);

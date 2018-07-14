@@ -21,7 +21,7 @@ function FileItem({ file, onClick }) {
     return (
         <Table.Row
             onClick={() => {
-                onClick(file.url);
+                onClick(file);
             }}
         >
             <Table.Cell>

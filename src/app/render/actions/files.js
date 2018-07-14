@@ -14,51 +14,59 @@ export const REQUEST_FILEDATA = "REQUEST_FILEDATA";
 export const RECEIVE_FILEDATA = "RECEIVE_FILEDATA";
 export const ERROR_FILEDATA = "ERROR_FILEDATA";
 
-function requestFileData(url) {
+// Pos denotes how the display list should be changed
+// Refer reducer for exact behaviour
+function requestFileData({ url, name }, pos) {
     return {
         type: REQUEST_FILEDATA,
-        url
+        url,
+        name,
+        pos
     };
 }
 
-function receiveFileData(url, data) {
+function receiveFileData({ url, name }, data) {
     return {
         type: RECEIVE_FILEDATA,
         url,
+        name,
         data
     };
 }
 
-function errorFileData(url, error) {
+function errorFileData({ url, name }, error) {
     return {
         type: ERROR_FILEDATA,
         url,
+        name,
         error
     };
 }
 
 // Fetches file data asynchronously
-function fetchFileData(url) {
+function fetchFileData(file, pos) {
     return async dispatch => {
         try {
             // Starting new request
-            dispatch(requestFileData(url));
+            dispatch(requestFileData(file, pos));
 
             // Create new client from config data
             let client = new Client(config._);
 
             // Fetch meta data
-            let data = await client.getMeta(url);
+            let data = await client.getMeta(file.url);
 
             // If directory then fetch it's content also. It will be stored
             // along with meta data.
             if (data.type === "dir") {
-                data.children = (await client.getDirectoryInfo(url)).children;
+                data.children = (await client.getDirectoryInfo(
+                    file.url
+                )).children;
             }
 
-            dispatch(receiveFileData(url, data));
+            dispatch(receiveFileData(file, data));
         } catch (err) {
-            dispatch(errorFileData(url, err));
+            dispatch(errorFileData(file, err));
         }
     };
 }
@@ -66,8 +74,14 @@ function fetchFileData(url) {
 // Will display file with given URL i.e. it will update the display state.
 // It is different from fetchFileData because it uses cached data if
 // present. It is the responsibility of the calling component to redirect to
-// the correct URL.
-export function displayFile(url) {
+// the correct app URL.
+//
+// Param:
+//  - file: The file object containing url and name.
+//  - pos: Check files reducer for more info.
+export function displayFile(file, pos) {
+    let url = file.url;
+
     return (dispatch, getState) => {
         let state = getState();
 
@@ -77,18 +91,18 @@ export function displayFile(url) {
             // We emulate a request and receive using cached data
             // this ensures that state is updated properly without explicit
             // changes
-            dispatch(requestFileData(url));
+            dispatch(requestFileData(file, pos));
 
             // If file data request was sent but not received then don't
             // dispatch receiveFileData
             if (!isLoading(state, url)) {
                 let data = getData(state, url);
 
-                dispatch(receiveFileData(url, data));
+                dispatch(receiveFileData(file, data));
             }
         } else {
             // cache miss, need to request file data
-            dispatch(fetchFileData(url));
+            dispatch(fetchFileData(file, pos));
         }
     };
 }
