@@ -23,7 +23,7 @@ const videoExt = [
 
 const audioExt = [".mp3", ".mpa", ".aac", ".oga", ".wav"];
 
-function FileItem({ file }) {
+function FileItem({ file, onClick }) {
     // Assume folder by default
     let icon = "folder";
     let ext = Path.extname(file.name);
@@ -34,8 +34,14 @@ function FileItem({ file }) {
     else if (audioExt.includes(ext)) icon = "music";
     else if (ext) icon = "file outline";
 
+    // Creating a new onClick function here is more performant than passing a
+    // bound function.
     return (
-        <Table.Row>
+        <Table.Row
+            onClick={() => {
+                onClick(file.url);
+            }}
+        >
             <Table.Cell>
                 <Icon name={icon} />
                 {file.name}
@@ -45,7 +51,7 @@ function FileItem({ file }) {
     );
 }
 
-export default function FileTable({ header, files }) {
+export default function FileTable({ header, files, onFileItemClick }) {
     if (!files) return null;
 
     return (
@@ -61,7 +67,9 @@ export default function FileTable({ header, files }) {
             </Table.Header>
 
             <Table.Body>
-                {files.map((file, ind) => <FileItem key={ind} file={file} />)}
+                {files.map((file, ind) => (
+                    <FileItem key={ind} file={file} onClick={onFileItemClick} />
+                ))}
             </Table.Body>
         </Table>
     );

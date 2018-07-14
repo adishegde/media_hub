@@ -6,6 +6,7 @@ import { Switch, Route } from "react-router";
 import Startup from "app/render/containers/Startup";
 import Home from "app/render/containers/Home";
 import SearchResult from "app/render/containers/SearchResults";
+import FileData from "app/render/containers/FileData";
 
 import { addLogFile } from "core/utils/log";
 import { CLIENT_LOG } from "app/utils/constants";
@@ -32,6 +33,7 @@ export default function App(props) {
             <Switch>
                 <Route exact path="/" component={Home} />
                 <Route path="/results" component={SearchResult} />
+                <Route path="/file" component={FileData} />
             </Switch>
         </div>
     );

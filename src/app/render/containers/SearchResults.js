@@ -1,6 +1,7 @@
 /* Display search results and search bar */
 import React from "react";
 import { connect } from "react-redux";
+import { withRouter } from "react-router";
 
 import SearchResultsComponent from "app/render/components/SearchResults";
 import {
@@ -9,6 +10,7 @@ import {
     getCurrentPage,
     getError
 } from "app/render/selectors/search";
+import { displayFile } from "app/render/actions/files";
 import { search, fetchResultPage } from "app/render/actions/search";
 
 // The source of truth for the results to be displayed is the query object
@@ -24,18 +26,24 @@ function mapStateToProps(state) {
     };
 }
 
-function mapDispatchToProps(dispatch) {
+function mapDispatchToProps(dispatch, { history }) {
     return {
         onPageChange: delta => {
             dispatch(fetchResultPage(delta));
         },
         onSearch: query => {
             dispatch(search(query));
+        },
+        onFileItemClick: url => {
+            dispatch(displayFile(url));
+            history.push("/file");
         }
     };
 }
 
-export default connect(
-    mapStateToProps,
-    mapDispatchToProps
-)(SearchResultsComponent);
+export default withRouter(
+    connect(
+        mapStateToProps,
+        mapDispatchToProps
+    )(SearchResultsComponent)
+);
