@@ -26,6 +26,11 @@ export default function Search({ search, param, onChange, onSearch, loading }) {
             value={search}
             onChange={onChange}
             name="search"
+            onKeyPress={target => {
+                if (target.charCode === 13) {
+                    onSearch();
+                }
+            }}
         >
             <input />
             <Select
