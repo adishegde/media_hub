@@ -27,7 +27,7 @@ export function getData(state, url) {
     if (!state.files || !state.files.cache) return {};
 
     // If undefined then return empty object
-    return state.files.cache[state.files.display] || {};
+    return state.files.cache[url] || {};
 }
 
 export function getDisplayURL(state) {
