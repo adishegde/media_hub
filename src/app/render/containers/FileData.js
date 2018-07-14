@@ -10,29 +10,15 @@ import {
 } from "app/render/selectors/files";
 import FileDataComponent from "app/render/components/FileData";
 
+// The file whose data is to be diplayed is decided by the display property of
+// the files state.
 function mapStateToProps(state) {
     let url = getDisplayURL(state);
 
     return {
         data: getData(state, url),
-        loading: isLoading(state, url),
-        error: getError(state, url)
+        loading: isLoading(state, url)
     };
 }
 
-function mapDispatchToProps(state, { history }) {
-    // Minimal navigation support
-    return {
-        onBackClick: () => {
-            console.log("clicked");
-            history.push("/results");
-        }
-    };
-}
-
-export default withRouter(
-    connect(
-        mapStateToProps,
-        mapDispatchToProps
-    )(FileDataComponent)
-);
+export default withRouter(connect(mapStateToProps)(FileDataComponent));

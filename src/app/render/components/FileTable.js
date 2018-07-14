@@ -3,25 +3,7 @@ import React from "react";
 import * as Path from "path";
 import { Table, Icon } from "semantic-ui-react";
 
-// List of video extensions
-// Not meant to be exhaustive. Just the most common ones supported by the
-// browser
-const videoExt = [
-    ".mkv",
-    ".ogv",
-    ".ogg",
-    ".mp4",
-    ".m4p",
-    ".m4v",
-    ".webm",
-    ".mpg",
-    ".mp2",
-    ".mpeg",
-    ".mpe",
-    ".mpv"
-];
-
-const audioExt = [".mp3", ".mpa", ".aac", ".oga", ".wav"];
+import { videoExt, audioExt } from "app/utils/constants";
 
 function FileItem({ file, onClick }) {
     // Assume folder by default

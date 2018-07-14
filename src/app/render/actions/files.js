@@ -39,20 +39,27 @@ function errorFileData(url, error) {
 
 // Fetches file data asynchronously
 function fetchFileData(url) {
-    return dispatch => {
-        // Starting new request
-        dispatch(requestFileData(url));
+    return async dispatch => {
+        try {
+            // Starting new request
+            dispatch(requestFileData(url));
 
-        // Create new client from config data
-        let client = new Client(config._);
-        client
-            .getMeta(url)
-            .then(data => {
-                dispatch(receiveFileData(url, data));
-            })
-            .catch(err => {
-                dispatch(errorFileData(url, err));
-            });
+            // Create new client from config data
+            let client = new Client(config._);
+
+            // Fetch meta data
+            let data = await client.getMeta(url);
+
+            // If directory then fetch it's content also. It will be stored
+            // along with meta data.
+            if (data.type === "dir") {
+                data.children = (await client.getDirectoryInfo(url)).children;
+            }
+
+            dispatch(receiveFileData(url, data));
+        } catch (err) {
+            dispatch(errorFileData(url, err));
+        }
     };
 }
 
