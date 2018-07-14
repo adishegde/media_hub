@@ -3,13 +3,13 @@ import Client from "core/client/client";
 import { remote } from "electron";
 
 import {
-    isSearchPageRequested,
+    isPageRequested,
     getCurrentPage,
-    getSearchQuery,
-    getSearchResult,
-    getSearchError,
+    getQuery,
+    getResult,
+    getError,
     isSearching
-} from "app/render/selectors/index";
+} from "app/render/selectors/search";
 
 // config data is exported by main process
 const config = remote.getGlobal("config");
@@ -100,13 +100,10 @@ export function fetchResultPage(delta) {
         // Page to request
         let reqpage = getCurrentPage(state) + delta;
         // New search query
-        let query = { ...getSearchQuery(state), page: reqpage };
+        let query = { ...getQuery(state), page: reqpage };
 
         // If reqpage retrieved without error already then don't fetch
-        if (
-            isSearchPageRequested(state, reqpage) &&
-            !getSearchError(state, reqpage)
-        ) {
+        if (isPageRequested(state, reqpage) && !getError(state, reqpage)) {
             // we emulate a request and recieve using cached data
             // this ensures that state is updated properly without explicit
             // changes
@@ -115,7 +112,7 @@ export function fetchResultPage(delta) {
             if (!isSearching(state, reqpage)) {
                 // Dispatch recieve results only if the page request is
                 // completed
-                let results = getSearchResult(state, reqpage);
+                let results = getResult(state, reqpage);
                 dispatch(receiveResults(query, results));
             }
         } else {

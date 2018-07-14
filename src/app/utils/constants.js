@@ -29,3 +29,30 @@ export const DEFAULT_CONFIG = {
     udpPort: DEFAULT_UDP_PORT,
     httpPort: DEFAULT_HTTP_PORT
 };
+
+// Similar to an enum to define request status
+export const statusCodes = {
+    loading: 1,
+    done: 2,
+    error: 3
+};
+
+// List of video and audio extensions
+// Not meant to be exhaustive. Just the most common ones supported by the
+// browser
+export const videoExt = [
+    ".mkv",
+    ".ogv",
+    ".ogg",
+    ".mp4",
+    ".m4p",
+    ".m4v",
+    ".webm",
+    ".mpg",
+    ".mp2",
+    ".mpeg",
+    ".mpe",
+    ".mpv"
+];
+
+export const audioExt = [".mp3", ".mpa", ".aac", ".oga", ".wav"];

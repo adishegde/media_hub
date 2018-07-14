@@ -20,7 +20,14 @@ export default class SearchResults extends React.Component {
 
     render() {
         let { search, param } = this.state;
-        let { searching, page, results, onPageChange, error } = this.props;
+        let {
+            searching,
+            page,
+            results,
+            onPageChange,
+            error,
+            onFileItemClick
+        } = this.props;
 
         let mainContent;
 
@@ -51,7 +58,11 @@ export default class SearchResults extends React.Component {
         } else {
             mainContent = (
                 <Segment style={{ height: "60vh", overflowY: "auto" }}>
-                    <FileTable header={`Result Page ${page}`} files={results} />
+                    <FileTable
+                        header={`Result Page ${page}`}
+                        files={results}
+                        onFileItemClick={onFileItemClick}
+                    />
                 </Segment>
             );
         }

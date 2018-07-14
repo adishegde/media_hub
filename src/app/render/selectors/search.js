@@ -1,17 +1,16 @@
-/* Functions exported here take the entire state as argument */
-import { statusCodes } from "app/render/reducers/search/status";
+import { statusCodes } from "app/utils/constants";
 
 export function isSearching(state, page) {
     if (!state.search || !state.search.status) return false;
-    return state.search.status[page] === statusCodes.searching;
+    return state.search.status[page] === statusCodes.loading;
 }
 
-export function isSearchPageRequested(state, page) {
+export function isPageRequested(state, page) {
     if (!state.search || !state.search.status) return false;
     return state.search.status[page] !== undefined;
 }
 
-export function getSearchError(state, page) {
+export function getError(state, page) {
     if (
         !state.search ||
         !state.search.status ||
@@ -27,7 +26,7 @@ export function getCurrentPage(state) {
     return state.search.query.page;
 }
 
-export function getSearchResult(state, page) {
+export function getResult(state, page) {
     if (!state.search || !state.search.results) return [];
 
     let res = state.search.results[page];
@@ -35,6 +34,6 @@ export function getSearchResult(state, page) {
     return res;
 }
 
-export function getSearchQuery(state) {
+export function getQuery(state) {
     return state.search.query;
 }

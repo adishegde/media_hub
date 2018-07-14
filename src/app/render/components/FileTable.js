@@ -3,27 +3,9 @@ import React from "react";
 import * as Path from "path";
 import { Table, Icon } from "semantic-ui-react";
 
-// List of video extensions
-// Not meant to be exhaustive. Just the most common ones supported by the
-// browser
-const videoExt = [
-    ".mkv",
-    ".ogv",
-    ".ogg",
-    ".mp4",
-    ".m4p",
-    ".m4v",
-    ".webm",
-    ".mpg",
-    ".mp2",
-    ".mpeg",
-    ".mpe",
-    ".mpv"
-];
+import { videoExt, audioExt } from "app/utils/constants";
 
-const audioExt = [".mp3", ".mpa", ".aac", ".oga", ".wav"];
-
-function FileItem({ file }) {
+function FileItem({ file, onClick }) {
     // Assume folder by default
     let icon = "folder";
     let ext = Path.extname(file.name);
@@ -34,8 +16,14 @@ function FileItem({ file }) {
     else if (audioExt.includes(ext)) icon = "music";
     else if (ext) icon = "file outline";
 
+    // Creating a new onClick function here is more performant than passing a
+    // bound function.
     return (
-        <Table.Row>
+        <Table.Row
+            onClick={() => {
+                onClick(file);
+            }}
+        >
             <Table.Cell>
                 <Icon name={icon} />
                 {file.name}
@@ -45,7 +33,7 @@ function FileItem({ file }) {
     );
 }
 
-export default function FileTable({ header, files }) {
+export default function FileTable({ header, files, onFileItemClick }) {
     if (!files) return null;
 
     return (
@@ -61,7 +49,9 @@ export default function FileTable({ header, files }) {
             </Table.Header>
 
             <Table.Body>
-                {files.map((file, ind) => <FileItem key={ind} file={file} />)}
+                {files.map((file, ind) => (
+                    <FileItem key={ind} file={file} onClick={onFileItemClick} />
+                ))}
             </Table.Body>
         </Table>
     );

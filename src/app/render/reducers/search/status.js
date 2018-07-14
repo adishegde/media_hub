@@ -5,13 +5,7 @@ import {
     ERROR_SEARCH,
     CLEAR_CACHE
 } from "app/render/actions/search";
-
-// Similar to an enum to define request status
-export const statusCodes = {
-    searching: 1,
-    done: 2,
-    error: 3
-};
+import { statusCodes } from "app/utils/constants";
 
 // State is a mapping from page to request status.
 // If true then the page request is complete, if false then page request has
@@ -22,7 +16,7 @@ export default function status(state = {}, action) {
             return {};
 
         case START_SEARCH:
-            return { ...state, [action.query.page]: statusCodes.searching };
+            return { ...state, [action.query.page]: statusCodes.loading };
 
         case RECEIVE_RESULTS:
             return { ...state, [action.query.page]: statusCodes.done };

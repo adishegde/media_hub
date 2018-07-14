@@ -142,6 +142,18 @@ function init() {
             createServer();
         });
     });
+
+    // In development install extensions
+    if (process.env.MH_ENV === "development") {
+        const Installer = require("electron-devtools-installer");
+
+        Promise.all([
+            Installer.default(Installer.REACT_DEVELOPER_TOOLS),
+            Installer.default(Installer.REDUX_DEVTOOLS)
+        ]).catch(err => {
+            console.log(err);
+        });
+    }
 }
 
 // Create new server instance
