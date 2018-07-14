@@ -6,7 +6,7 @@
     "scripts": {
         "precommit": "pretty-quick --staged",
         "start": "MH_ENV=development ELECTRON_DISABLE_SECURITY_WARNINGS=true electron --port=5858 .",
-        "watch": "webpack --mode=development && webpack-dev-server --mode=development --content-base dist/ --inline --port 1234",
+        "watch": "MH_ENV=development webpack --mode=development && webpack-dev-server --mode=development --content-base dist/ --inline --port 1234",
         "bundle": "webpack --mode=production",
         "build-cli": "babel src --ignore src/app -d cli-build",
         "start-prod": "electron ."
@@ -21,6 +21,7 @@
         "babel-preset-env": "^1.6.1",
         "css-loader": "^0.28.11",
         "electron": "^2.0.3",
+        "electron-devtools-installer": "^2.2.4",
         "electron-rebuild": "^1.7.3",
         "eslint": "^4.19.1",
         "file-loader": "^1.1.11",
@@ -53,7 +54,6 @@
         "react-redux": "^5.0.7",
         "react-router": "^4.3.1",
         "redux": "^4.0.0",
-        "redux-logger": "^3.0.6",
         "redux-thunk": "^2.3.0",
         "semantic-ui-css": "^2.3.2",
         "semantic-ui-react": "^0.81.2",

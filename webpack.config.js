@@ -1,6 +1,7 @@
 const Path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const NodeExternals = require("webpack-node-externals");
+const webpack = require("webpack");
 
 // No need to bundle node modules for main process
 const mainProcConfig = {
@@ -62,5 +63,13 @@ const renderProcConfig = {
         modules: [Path.join(__dirname, "src"), "node_modules"]
     }
 };
+
+if (process.env.MH_ENV === "development") {
+    new webpack.DefinePlugin({
+        "process.env": {
+            NODE_ENV: JSON.stringify("development")
+        }
+    });
+}
 
 module.exports = [mainProcConfig, renderProcConfig];
