@@ -1,4 +1,4 @@
-import Client from "core/client/client";
+import Client from "app/utils/client";
 import { remote } from "electron";
 
 import {
