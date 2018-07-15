@@ -54,12 +54,12 @@ const renderProcConfig = {
             }
         ]
     },
-    plugins: [new HtmlWebpackPlugin()],
+    plugins: [
+        new HtmlWebpackPlugin({
+            template: Path.join(__dirname, "src", "app", "index.html")
+        })
+    ],
     resolve: {
-        alias: {
-            react: "preact-compat",
-            "react-dom": "preact-compat"
-        },
         modules: [Path.join(__dirname, "src"), "node_modules"]
     }
 };
