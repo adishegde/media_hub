@@ -33,7 +33,8 @@ export default function FilePageBreadcrumb({
     sections.unshift({
         onClick: onNavigateResults,
         link: true,
-        content: "Results"
+        content: "Results",
+        key: -1
     });
 
     return <Breadcrumb size="large" sections={sections} icon="right angle" />;

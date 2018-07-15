@@ -37,7 +37,7 @@ export default function FileTable({ header, files, onFileItemClick }) {
     if (!files) return null;
 
     return (
-        <Table celled stripped size="small">
+        <Table celled striped size="small">
             <Table.Header>
                 <Table.Row textAlign="center">
                     <Table.HeaderCell colSpan="2">{header}</Table.HeaderCell>
