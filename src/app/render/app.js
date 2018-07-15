@@ -7,6 +7,7 @@ import Startup from "app/render/containers/Startup";
 import Home from "app/render/containers/Home";
 import SearchResult from "app/render/containers/SearchResults";
 import FilePage from "app/render/containers/FilePage";
+import TopMenu from "app/render/containers/TopMenu";
 
 import { addLogFile } from "core/utils/log";
 import { CLIENT_LOG } from "app/utils/constants";
@@ -30,6 +31,7 @@ export default function App(props) {
     // Should return proper app component here.
     return (
         <div id="app" style={{ height: "100%", width: "100%" }}>
+            <TopMenu />
             <Switch>
                 <Route exact path="/" component={Home} />
                 <Route path="/results" component={SearchResult} />
