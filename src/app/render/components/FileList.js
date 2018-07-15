@@ -1,7 +1,7 @@
 /* A simple list of files along with icons */
 import React from "react";
 import * as Path from "path";
-import { List, Icon } from "semantic-ui-react";
+import { List, Icon, Segment } from "semantic-ui-react";
 
 import { videoExt, audioExt } from "app/utils/constants";
 
@@ -28,14 +28,16 @@ function FileItem({ file, onClick }) {
     );
 }
 
-export default function FileList({ header, files, onFileItemClick }) {
+export default function FileList({ files, loading, onFileItemClick, style }) {
     if (!files) return null;
 
     return (
-        <List divided relaxed>
-            {files.map((file, ind) => (
-                <FileItem key={ind} file={file} onClick={onFileItemClick} />
-            ))}
-        </List>
+        <Segment basic loading={loading} style={style} textAlign="left">
+            <List divided relaxed>
+                {files.map((file, ind) => (
+                    <FileItem key={ind} file={file} onClick={onFileItemClick} />
+                ))}
+            </List>
+        </Segment>
     );
 }

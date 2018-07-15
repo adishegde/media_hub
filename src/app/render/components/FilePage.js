@@ -1,9 +1,10 @@
 /* Component to display file data */
 import React from "react";
-import { Segment, Grid, Message } from "semantic-ui-react";
+import { Segment, Grid, Message, Header } from "semantic-ui-react";
 
 import FileData from "app/render/containers/FileData";
 import Breadcrumb from "app/render/containers/FilePageBreadcrumb";
+import DirList from "app/render/containers/DirList";
 
 export default function FilePage({ error }) {
     let content = null;
@@ -12,16 +13,17 @@ export default function FilePage({ error }) {
         // If error then display message
         content = <Message error>{error}</Message>;
     } else {
-        content = <FileData />;
+        content = (
+            <div style={{ height: "100%", width: "100%" }}>
+                <DirList />
+                <FileData />
+            </div>
+        );
     }
 
     return (
         <div className="file-data" style={{ height: "100%", width: "100%" }}>
-            <Segment
-                textAlign="center"
-                verticalAlign="middle"
-                style={{ maxHeight: "20%" }}
-            >
+            <Segment textAlign="center" style={{ maxHeight: "20%" }}>
                 <Breadcrumb />
             </Segment>
             <Grid
