@@ -4,7 +4,7 @@ import Winston from "winston";
 import Progress from "cli-progress";
 import Table from "cli-table";
 
-import Client from "../core/client/client";
+import Client from "./utils/client";
 import { addConsoleLog } from "../core/utils/log";
 import {
     DEFAULT_CLIENT as DEFAULT,
