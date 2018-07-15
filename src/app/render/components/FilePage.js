@@ -5,6 +5,7 @@ import { Segment, Grid, Message, Header } from "semantic-ui-react";
 import FileData from "app/render/containers/FileData";
 import Breadcrumb from "app/render/containers/FilePageBreadcrumb";
 import DirList from "app/render/containers/DirList";
+import Stream from "app/render/containers/FileStream";
 
 export default function FilePage({ error }) {
     let content = null;
@@ -15,6 +16,7 @@ export default function FilePage({ error }) {
     } else {
         content = (
             <div style={{ height: "100%", width: "100%" }}>
+                <Stream />
                 <DirList />
                 <FileData />
             </div>

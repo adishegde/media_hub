@@ -1,12 +1,7 @@
 /* File data page */
 import { connect } from "react-redux";
 
-import {
-    getDisplayURL,
-    getData,
-    isLoading,
-    getError
-} from "app/render/selectors/files";
+import { getDisplayURL, getData, isLoading } from "app/render/selectors/files";
 import FileDataComponent from "app/render/components/FileData";
 import { displayFile } from "app/render/actions/files";
 
