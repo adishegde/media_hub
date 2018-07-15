@@ -80,7 +80,7 @@ export default class SearchResults extends React.Component {
                                 basic
                                 textAlign="center"
                                 style={{ height: "10%" }}
-                                verticalAlign="center"
+                                vertical
                             >
                                 <SearchBar
                                     search={search}
