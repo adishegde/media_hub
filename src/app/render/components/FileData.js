@@ -2,20 +2,7 @@
 import React from "react";
 import { Table, Segment, Label, Header } from "semantic-ui-react";
 
-// Takes size in bytes and returns string with right units to make it more
-// readable
-function formatBytes(bytes) {
-    let suf = ["B", "KB", "MB", "GB", "TB", "PB", "EB"];
-
-    if (bytes === 0) {
-        return `0 ${suf[0]}`;
-    }
-
-    let place = Math.floor(Math.log2(bytes) / 10);
-    let num = (bytes / Math.pow(1024, place)).toFixed(2);
-
-    return `${num} ${suf[place]}`;
-}
+import { formatBytes } from "app/utils/functions";
 
 // A table for displaying file data
 export default function FileData({
