@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain } from "electron";
+import { download } from "electron-dl";
 import * as Path from "path";
 import * as Url from "url";
 import * as Fs from "fs";
@@ -15,6 +16,7 @@ import {
 import Server from "core/daemon/server";
 import Config from "core/utils/config";
 import { addLogFile } from "core/utils/log";
+import * as Download from "./download";
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -56,7 +58,8 @@ function createWindow() {
         height: 600,
         frame: true,
         show: false,
-        title: APP_NAME
+        title: APP_NAME,
+        fullscreen: true
     });
 
     // and load the index.html of the app.
@@ -171,6 +174,49 @@ function createServer() {
         mainWindow.webContents.send("server-error", err);
     }
 }
+
+// Handle file download messages
+ipcMain.on("download", (e, url, directory = config._.incoming) => {
+    // Not enough information
+    if (!url || !directory) return;
+
+    download(mainWindow, url, {
+        directory,
+        onStarted: di => {
+            Download.onStart(url, di);
+            mainWindow.webContents.send(
+                "download-started",
+                url,
+                di.getSavePath()
+            );
+        },
+        onCancel: () => {
+            mainWindow.webContents.send("download-cancelled", url);
+        },
+        onProgress: ratio => {
+            mainWindow.webContents.send("download-progress", url, ratio);
+        }
+    })
+        .then(() => {
+            mainWindow.webContents.send("download-complete", url);
+        })
+        .catch(err => {
+            mainWindow.webContents.send("download-error", url, err);
+        });
+});
+
+// Hanlde requests to pause/resume downlaods
+ipcMain.on("download-toggle", (e, url) => {
+    let state = Download.onToggle(url);
+
+    // Inform render process that download state has been toggled
+    mainWindow.webContents.send("download-toggle", url, state);
+});
+
+// Handle requests to cancel downloads
+ipcMain.on("download-cancel", (e, url) => {
+    Download.onCancel(url);
+});
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.

@@ -5,7 +5,7 @@ const webpack = require("webpack");
 
 // No need to bundle node modules for main process
 const mainProcConfig = {
-    entry: Path.resolve(__dirname, "src", "app", "main.js"),
+    entry: Path.resolve(__dirname, "src", "app", "main", "index.js"),
     output: {
         filename: "main.js",
         path: Path.resolve(__dirname, "dist")
