@@ -1,13 +1,13 @@
 /* Component to display file data */
 import React from "react";
-import { Segment, Grid, Message, Header } from "semantic-ui-react";
+import { Segment, Grid, Message, Header, Button } from "semantic-ui-react";
 
 import FileData from "app/render/containers/FileData";
 import Breadcrumb from "app/render/containers/FilePageBreadcrumb";
 import DirList from "app/render/containers/DirList";
 import Stream from "app/render/containers/FileStream";
 
-export default function FilePage({ error }) {
+export default function FilePage({ error, onDownload, url }) {
     let content = null;
 
     if (error) {
@@ -19,6 +19,14 @@ export default function FilePage({ error }) {
                 <Stream />
                 <DirList />
                 <FileData />
+                <Button
+                    onClick={() => {
+                        onDownload(url);
+                    }}
+                    icon="download"
+                    content="Download"
+                    positive
+                />
             </div>
         );
     }

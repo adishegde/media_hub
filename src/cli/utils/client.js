@@ -12,7 +12,6 @@ import ClientCore from "../../core/client/client";
 
 const logger = Winston.loggers.get("client");
 const fstat = Util.promisify(Fs.stat);
-const fsaccess = Util.promisify(Fs.access);
 const mkdir = Util.promisify(Fs.mkdir);
 
 // Function that actually downloads file served at url to given path. No check

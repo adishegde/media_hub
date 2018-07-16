@@ -56,3 +56,11 @@ export const videoExt = [
 ];
 
 export const audioExt = [".mp3", ".mpa", ".aac", ".oga", ".wav"];
+
+export const downloadStatus = {
+    done: 1,
+    error: 2,
+    cancelled: 3,
+    paused: 4,
+    downloading: 5
+};

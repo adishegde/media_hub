@@ -8,6 +8,7 @@ import Home from "app/render/containers/Home";
 import SearchResult from "app/render/containers/SearchResults";
 import FilePage from "app/render/containers/FilePage";
 import TopMenu from "app/render/containers/TopMenu";
+import DownloadPage from "app/render/containers/DownloadList";
 
 import { addLogFile } from "core/utils/log";
 import { CLIENT_LOG } from "app/utils/constants";
@@ -36,6 +37,7 @@ export default function App(props) {
                 <Route exact path="/" component={Home} />
                 <Route path="/results" component={SearchResult} />
                 <Route path="/file" component={FilePage} />
+                <Route path="/downloads" component={DownloadPage} />
             </Switch>
         </div>
     );
