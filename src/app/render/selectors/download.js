@@ -1,6 +1,6 @@
-export function getInfo(state, url) {
+export function getInfo(state, id) {
     if (!state.downloads) return {};
-    return state.downloads[url];
+    return state.downloads[id];
 }
 
 export function getList(state) {

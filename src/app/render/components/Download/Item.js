@@ -8,7 +8,7 @@ import { downloadStatus } from "app/utils/constants";
 export default function DownloadItem({
     error,
     file: { name, size },
-    url,
+    id,
     progress,
     path,
     status,
@@ -67,7 +67,7 @@ export default function DownloadItem({
                                     color="teal"
                                     icon={icon}
                                     onClick={() => {
-                                        onToggle(url);
+                                        onToggle(id);
                                     }}
                                 />
                             </Grid.Column>
@@ -84,7 +84,7 @@ export default function DownloadItem({
                                     negative
                                     icon="cancel"
                                     onClick={() => {
-                                        onCancel(url);
+                                        onCancel(id);
                                     }}
                                 />
                             </Grid.Column>

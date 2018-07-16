@@ -12,9 +12,10 @@ export default function downloads(state = {}, action) {
         case INITIATE_DOWNLOAD:
             return {
                 ...state,
-                [action.url]: {
+                [action.id]: {
                     file: action.file,
                     url: action.url,
+                    id: action.id,
                     status: downloadStatus.downloading,
                     progress: 0
                 }
@@ -23,8 +24,8 @@ export default function downloads(state = {}, action) {
         case START_DOWNLOAD:
             return {
                 ...state,
-                [action.url]: {
-                    ...state[action.url],
+                [action.id]: {
+                    ...state[action.id],
                     path: action.path
                 }
             };
@@ -32,8 +33,8 @@ export default function downloads(state = {}, action) {
         case PROGRESS_DOWNLOAD:
             return {
                 ...state,
-                [action.url]: {
-                    ...state[action.url],
+                [action.id]: {
+                    ...state[action.id],
                     progress: action.progress
                 }
             };
@@ -41,8 +42,8 @@ export default function downloads(state = {}, action) {
         case UPDATE_STATUS_DOWNLOAD:
             return {
                 ...state,
-                [action.url]: {
-                    ...state[action.url],
+                [action.id]: {
+                    ...state[action.id],
                     status: action.status,
                     error: action.error
                 }

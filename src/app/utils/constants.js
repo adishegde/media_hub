@@ -64,3 +64,22 @@ export const downloadStatus = {
     paused: 4,
     downloading: 5
 };
+
+// Channel names on which ipcMain listens
+export const ipcMainChannels = {
+    DL_START: "DL_START",
+    DL_CANCEL: "DL_CANCEL",
+    DL_TOGGLE: "DL_TOGGLE",
+    CONFIG_UPDATE: "CONFIG_UPDATE"
+};
+
+// Channel names on which ipcRenderer listens
+export const ipcRendererChannels = {
+    DL_START: "DL_START",
+    DL_CANCEL: "DL_CANCEL",
+    DL_PROGRESS: "DL_PROGRESS",
+    DL_COMPLETE: "DL_COMPLETE",
+    DL_ERROR: "DL_ERROR",
+    DL_TOGGLE: "DL_TOGGLE",
+    SERVER_ERROR: "SERVER_ERROR"
+};

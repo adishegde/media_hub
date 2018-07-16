@@ -17,6 +17,10 @@ import Server from "core/daemon/server";
 import Config from "core/utils/config";
 import { addLogFile } from "core/utils/log";
 import * as Download from "./download";
+import {
+    ipcMainChannels as Mch,
+    ipcRendererChannels as Rch
+} from "app/utils/constants";
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -134,7 +138,7 @@ function init() {
     }
 
     // Listen for messages from server
-    ipcMain.on("update-config", (event, update) => {
+    ipcMain.on(Mch.CONFIG_UPDATE, (event, update) => {
         // Assign updated properties to config
         Object.assign(config._, update);
 
@@ -171,51 +175,54 @@ function createServer() {
         server.start();
     } catch (err) {
         // if error occurs then emit error onto browser window
-        mainWindow.webContents.send("server-error", err);
+        mainWindow.webContents.send(Rch.SERVER_ERROR, err);
     }
 }
 
 // Handle file download messages
-ipcMain.on("download", (e, url, directory = config._.incoming) => {
+// The renderer process sends the url and request id. The request id will be
+// used for further communication. It's the responsibility of the renderer to
+// create unique ids.
+ipcMain.on(Mch.DL_START, (e, url, id, directory = config._.incoming) => {
     // Not enough information
-    if (!url || !directory) return;
+    if (!url || !directory || !id) return;
 
     download(mainWindow, url, {
         directory,
-        onStarted: di => {
-            Download.onStart(url, di);
-            mainWindow.webContents.send(
-                "download-started",
-                url,
-                di.getSavePath()
-            );
+        onStarted: ditem => {
+            Download.onStart(id, ditem);
+
+            // Notify renderer that download has started
+            mainWindow.webContents.send(Rch.DL_START, id, ditem.getSavePath());
         },
         onCancel: () => {
-            mainWindow.webContents.send("download-cancelled", url);
+            mainWindow.webContents.send(Rch.DL_CANCEL, id);
         },
         onProgress: ratio => {
-            mainWindow.webContents.send("download-progress", url, ratio);
+            mainWindow.webContents.send(Rch.DL_PROGRESS, id, ratio);
         }
     })
         .then(() => {
-            mainWindow.webContents.send("download-complete", url);
+            mainWindow.webContents.send(Rch.DL_COMPLETE, id);
         })
         .catch(err => {
-            mainWindow.webContents.send("download-error", url, err);
+            mainWindow.webContents.send(Rch.DL_ERROR, id, err);
         });
 });
 
 // Hanlde requests to pause/resume downlaods
-ipcMain.on("download-toggle", (e, url) => {
-    let state = Download.onToggle(url);
+ipcMain.on(Mch.DL_TOGGLE, (e, id) => {
+    let state = Download.onToggle(id);
 
     // Inform render process that download state has been toggled
-    mainWindow.webContents.send("download-toggle", url, state);
+    mainWindow.webContents.send(Rch.DL_TOGGLE, id, state);
 });
 
 // Handle requests to cancel downloads
-ipcMain.on("download-cancel", (e, url) => {
-    Download.onCancel(url);
+ipcMain.on(Mch.DL_CANCEL, (e, id) => {
+    Download.onCancel(id);
+    // Renderer is informed on successful cancel because of onCancel listener
+    // registered in download
 });
 
 // This method will be called when Electron has finished

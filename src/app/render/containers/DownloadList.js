@@ -15,11 +15,11 @@ function mapStateToProps(state) {
 
 function mapDispatchToProps(dispatch) {
     return {
-        onCancel: url => {
-            dispatch(cancelDownload(url));
+        onCancel: id => {
+            dispatch(cancelDownload(id));
         },
-        onToggle: url => {
-            dispatch(toggleStateDownload(url));
+        onToggle: id => {
+            dispatch(toggleStateDownload(id));
         }
     };
 }

@@ -2,10 +2,10 @@
  * might be better to abstract away the ipc messages to client for modularity
  * in the future. */
 import { ipcRenderer } from "electron";
+import uuid from "uuid/v4";
 
 import { getData } from "app/render/selectors/files";
-import { getInfo } from "app/render/selectors/download";
-import { downloadStatus } from "app/utils/constants";
+import { downloadStatus, ipcMainChannels as Mch } from "app/utils/constants";
 
 export const START_DOWNLOAD = "START_DOWNLOAD";
 export const UPDATE_STATUS_DOWNLOAD = "UPDATE_STATUS_DOWNLOAD";
@@ -13,38 +13,39 @@ export const PROGRESS_DOWNLOAD = "PROGRESS_DOWNLOAD";
 export const INITIATE_DOWNLOAD = "INITIATE_DOWNLOAD";
 
 // Dispatched when the download has started
-export function startDownload(url, path) {
+export function startDownload(id, path) {
     return {
         type: START_DOWNLOAD,
-        url,
+        id,
         path
     };
 }
 
 // Dispatched when the download request is sent
 // The path is still not determined
-function initiateDownload(url, file) {
+function initiateDownload(id, url, file) {
     return {
         type: INITIATE_DOWNLOAD,
         file,
-        url
+        url,
+        id
     };
 }
 
-export function updateStatusDownload(url, status, error) {
+export function updateStatusDownload(id, status, error) {
     return {
         type: UPDATE_STATUS_DOWNLOAD,
-        url,
+        id,
         status,
         error
     };
 }
 
-export function updateProgressDownload(url, progress) {
+export function updateProgressDownload(id, progress) {
     return {
         type: PROGRESS_DOWNLOAD,
         progress,
-        url
+        id
     };
 }
 
@@ -57,25 +58,32 @@ export function download(url) {
         let file = getData(state, url);
 
         // Directory download is not supported yet
-        if (file.type === "dir") return;
+        //
+        // Due to the current flow of the app, files can be downloaded only from
+        // the file data page. This means that the filedata should be available
+        // when downloading.
+        if (file.type === "file") {
+            // Generate new download id
+            let id = uuid();
 
-        dispatch(initiateDownload(url, file));
+            dispatch(initiateDownload(id, url, file));
 
-        // Send download request
-        ipcRenderer.send("download", url);
+            // Send download request
+            ipcRenderer.send(Mch.DL_START, url, id);
+        }
     };
 }
 
 // Cancel download of URL
-export function cancelDownload(url) {
+export function cancelDownload(id) {
     return () => {
-        ipcRenderer.send("download-cancel", url);
+        ipcRenderer.send(Mch.DL_CANCEL, id);
     };
 }
 
 // Toggle between pause and resume state of download
-export function toggleStateDownload(url) {
+export function toggleStateDownload(id) {
     return () => {
-        ipcRenderer.send("download-toggle", url);
+        ipcRenderer.send(Mch.DL_TOGGLE, id);
     };
 }

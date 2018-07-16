@@ -7,7 +7,7 @@ export default function DownloadList({ downloads, onCancel, onToggle }) {
     let items = downloads.map(download => (
         <DItem
             {...download}
-            key={download.url}
+            key={download.id}
             onCancel={onCancel}
             onToggle={onToggle}
         />

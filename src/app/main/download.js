@@ -1,34 +1,38 @@
 /* Adds IPC for managing file downloads */
 
-// Maintain a mapping from URL to download items
+// Maintain a mapping from id to download items
 const map = {};
 
-export function onStart(url, downloadItem) {
+export function onStart(id, downloadItem) {
+    // If any id collision happens then cancel old download. This helps prevent
+    // untracked downloads
+    //if (map[id]) map[id].cancel();
+
     // Add downloadItem to map
-    map[url] = downloadItem;
+    map[id] = downloadItem;
 }
 
-export function onCancel(url) {
+export function onCancel(id) {
     // If downloadItem does not exist don't do anything
-    if (!map[url]) return;
+    if (!map[id]) return;
 
-    map[url].cancel();
+    map[id].cancel();
 
     // Once cancelled we don't require the mapping
-    delete map[url];
+    delete map[id];
 }
 
-export function onToggle(url) {
+export function onToggle(id) {
     // If downloadItem does not exist or downlaod can't be resumed then don't
     // do anything.
-    if (!map[url]) return;
+    if (!map[id]) return;
 
-    if (!map[url].isPaused()) {
-        map[url].pause();
+    if (!map[id].isPaused()) {
+        map[id].pause();
         return "paused";
     }
-    if (map[url].canResume()) {
-        map[url].resume();
+    if (map[id].canResume()) {
+        map[id].resume();
         return "resumed";
     }
 }

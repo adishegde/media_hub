@@ -14,38 +14,38 @@ import {
     updateProgressDownload
 } from "app/render/actions/download";
 import { downloadStatus } from "app/utils/constants";
+import { ipcRendererChannels as Rch } from "app/utils/constants";
 
 let store = configureStore();
 
 // Listen to IPC messages. Not sure if this is the best place to add listeners,
 // but it sure is the easiest way.
-ipcRenderer.on("download-started", (e, url, path) => {
-    store.dispatch(startDownload(url, path));
+ipcRenderer.on(Rch.DL_START, (e, id, path) => {
+    store.dispatch(startDownload(id, path));
 });
 
-ipcRenderer.on("download-cancelled", (e, url) => {
-    store.dispatch(updateStatusDownload(url, downloadStatus.cancelled));
+ipcRenderer.on(Rch.DL_CANCEL, (e, id) => {
+    store.dispatch(updateStatusDownload(id, downloadStatus.cancelled));
 });
 
-ipcRenderer.on("download-progress", (e, url, ratio) => {
-    store.dispatch(updateProgressDownload(url, ratio));
+ipcRenderer.on(Rch.DL_PROGRESS, (e, id, ratio) => {
+    store.dispatch(updateProgressDownload(id, ratio));
 });
 
-ipcRenderer.on("download-complete", (e, url) => {
-    store.dispatch(updateStatusDownload(url, downloadStatus.done));
+ipcRenderer.on(Rch.DL_COMPLETE, (e, id) => {
+    store.dispatch(updateStatusDownload(id, downloadStatus.done));
 });
 
-ipcRenderer.on("download-toggle", (e, url, state) => {
+ipcRenderer.on(Rch.DL_TOGGLE, (e, id, state) => {
     // NOTE: There is some level of hardcoding here wrt to the state values.
-    // This needs to be abstracted.
     if (state === "resumed")
-        store.dispatch(updateStatusDownload(url, downloadStatus.downloading));
+        store.dispatch(updateStatusDownload(id, downloadStatus.downloading));
     else if (state === "paused")
-        store.dispatch(updateStatusDownload(url, downloadStatus.paused));
+        store.dispatch(updateStatusDownload(id, downloadStatus.paused));
 });
 
-ipcRenderer.on("download-error", (e, url, error) => {
-    store.dispatch(updateStatusDownload(url, downloadStatus.error, error));
+ipcRenderer.on(Rch.DL_ERROR, (e, id, error) => {
+    store.dispatch(updateStatusDownload(id, downloadStatus.error, error));
 });
 
 ReactDom.render(
