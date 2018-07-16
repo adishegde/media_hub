@@ -1,5 +1,5 @@
 import React from "react";
-import { Item, Progress, Button } from "semantic-ui-react";
+import { Item, Progress, Button, Grid } from "semantic-ui-react";
 
 import FileIcon from "../FileIcon";
 import { formatBytes } from "app/utils/functions";
@@ -61,24 +61,34 @@ export default function DownloadItem({
                         <span>{`Downloading to ${path}`}</span>
                     </Item.Description>
                     <Item.Extra>
-                        <Button
-                            icon={icon}
-                            onClick={() => {
-                                onToggle(url);
-                            }}
-                        />
-                        <Progress
-                            percent={(progress * 100).toFixed(2)}
-                            indicating
-                            progress
-                            size="small"
-                        />
-                        <Button
-                            icon="cancel"
-                            onClick={() => {
-                                onCancel(url);
-                            }}
-                        />
+                        <Grid columns={3}>
+                            <Grid.Column width={1}>
+                                <Button
+                                    color="teal"
+                                    icon={icon}
+                                    onClick={() => {
+                                        onToggle(url);
+                                    }}
+                                />
+                            </Grid.Column>
+                            <Grid.Column width={5}>
+                                <Progress
+                                    percent={(progress * 100).toFixed(2)}
+                                    indicating
+                                    progress
+                                    size="small"
+                                />
+                            </Grid.Column>
+                            <Grid.Column width={1}>
+                                <Button
+                                    negative
+                                    icon="cancel"
+                                    onClick={() => {
+                                        onCancel(url);
+                                    }}
+                                />
+                            </Grid.Column>
+                        </Grid>
                     </Item.Extra>
                 </Item.Content>
             </Item>
