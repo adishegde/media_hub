@@ -5,8 +5,6 @@
 export const UUID_NAMESPACE = "4b94ccfc-ea76-47e0-b5f3-e2b4b4b23728";
 
 export const DEFAULT_SERVER = {
-    pollingInterval: 4000,
-    dbWriteInterval: 10000,
     db: "./media_hub-meta",
     maxResults: 10,
     ignore: ["(^|\\/)\\.[^\\/\\.]"],
