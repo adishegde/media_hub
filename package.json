@@ -42,7 +42,6 @@
     "main": "dist/main.js",
     "description": "Tool for sharing files over LAN",
     "dependencies": {
-        "anymatch": "^2.0.0",
         "chokidar": "^2.0.4",
         "cli-progress": "^2.0.0",
         "cli-table": "^0.3.1",

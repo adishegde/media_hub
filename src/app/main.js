@@ -3,6 +3,7 @@ import * as Path from "path";
 import * as Url from "url";
 import * as Fs from "fs";
 import Level from "level";
+import Winston from "winston";
 
 import {
     CONFIG_FILE,
@@ -15,6 +16,9 @@ import {
 import Server from "core/daemon/server";
 import Config from "core/utils/config";
 import { addLogFile } from "core/utils/log";
+
+// Use daemon logger in main
+const logger = Winston.loggers.get("daemon");
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -145,6 +149,8 @@ function init() {
 
     // In development install extensions
     if (process.env.MH_ENV === "development") {
+        logger.info("Main: Development mode. Adding dev-tools.");
+
         const Installer = require("electron-devtools-installer");
 
         Promise.all([
@@ -185,9 +191,24 @@ app.on("activate", function() {
     }
 });
 
-app.on("will-quit", () => {
+app.on("will-quit", e => {
+    e.preventDefault();
+
+    logger.info(`Main: App quit initiated. Cleaning up`);
+
     // Stop server if it's running
-    if (server) server.stop();
-    // Close db connection before quitting
-    if (db) db.close();
+    if (server)
+        Promise.all(server.stop())
+            .then(() => {
+                if (db) return db.close();
+            })
+            .then(() => {
+                logger.info("Main: Cleaned all resources. Shutting down.");
+            })
+            .catch(err => {
+                logger.error(`Main: ${err}`);
+            })
+            .then(() => {
+                app.exit();
+            });
 });
