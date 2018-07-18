@@ -42,7 +42,7 @@ export default class FileIndex {
 
         this.dirs = dirs;
         this.meta = metaData;
-        this.ignore = ignore;
+        this.ignore = ignore.map(exp => new RegExp(exp));
     }
 
     // Periodically index files
@@ -54,7 +54,7 @@ export default class FileIndex {
             this.running = true;
 
             this.watcher = Chokidar.watch(this.dirs, {
-                ignored: this.ignore,
+                ignored: path => this.ignore.some(re => re.test(path)),
                 awaitWriteFinish: true
             })
                 .on("add", this.meta.update)
