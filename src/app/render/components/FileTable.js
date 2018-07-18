@@ -1,21 +1,12 @@
 /* Table of files and directories */
 import React from "react";
 import * as Path from "path";
-import { Table, Icon } from "semantic-ui-react";
+import { Table } from "semantic-ui-react";
 
 import { videoExt, audioExt } from "app/utils/constants";
+import FileIcon from "./FileIcon";
 
 function FileItem({ file, onClick }) {
-    // Assume folder by default
-    let icon = "folder";
-    let ext = Path.extname(file.name);
-
-    // If video then display video icon. Check for video files is based on some
-    // common extension.
-    if (videoExt.includes(ext)) icon = "video";
-    else if (audioExt.includes(ext)) icon = "music";
-    else if (ext) icon = "file outline";
-
     // Creating a new onClick function here is more performant than passing a
     // bound function.
     return (
@@ -25,7 +16,7 @@ function FileItem({ file, onClick }) {
             }}
         >
             <Table.Cell>
-                <Icon name={icon} />
+                <FileIcon name={file.name} />
                 {file.name}
             </Table.Cell>
             <Table.Cell>{file.downloads}</Table.Cell>

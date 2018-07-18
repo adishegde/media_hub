@@ -16,6 +16,7 @@ import { isChild } from "../../utils/functions";
 const logger = Winston.loggers.get("daemon");
 
 const readdir = Util.promisify(Fs.readdir);
+const fsaccess = Util.promisify(Fs.access);
 
 export default class HTTPService {
     // Params:
@@ -329,6 +330,10 @@ export default class HTTPService {
                     // If hidden or not shared then throw error
                     throw Error("Resource can't be shared");
                 }
+
+                // Check to see if file exists at path and we have access.
+                // In most cases this should pass but it's still a valid check
+                return fsaccess(reqPath, Fs.constants.F_OK | Fs.constants.R_OK);
             })
             .catch(err => {
                 logger.debug(`HTTPService.validateRequest: ${err}`);

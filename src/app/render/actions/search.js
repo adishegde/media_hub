@@ -1,6 +1,5 @@
 /* Exports search related action creators */
 import Client from "app/utils/client";
-import { remote } from "electron";
 
 import {
     isPageRequested,
@@ -10,9 +9,6 @@ import {
     getError,
     isSearching
 } from "app/render/selectors/search";
-
-// config data is exported by main process
-const config = remote.getGlobal("config");
 
 export const START_SEARCH = "START_SEARCH";
 export const RECEIVE_RESULTS = "RECEIVE_RESULTS";
@@ -78,10 +74,7 @@ export function search(query) {
         // Starting search
         dispatch(startSearch(query));
 
-        // Create new client form config data
-        let client = new Client(config._);
-        client
-            .search(query.search, query.page, query.param)
+        Client.search(query.search, query.page, query.param)
             .then(results => {
                 dispatch(receiveResults(query, results));
             })
@@ -120,10 +113,7 @@ export function fetchResultPage(delta) {
             // Starting search
             dispatch(startSearch(query));
 
-            // Create new client form config data
-            let client = new Client(config._);
-            client
-                .search(query.search, query.page, query.param)
+            Client.search(query.search, query.page, query.param)
                 .then(results => {
                     dispatch(receiveResults(query, results));
                 })

@@ -56,3 +56,22 @@ export const videoExt = [
 ];
 
 export const audioExt = [".mp3", ".mpa", ".aac", ".oga", ".wav"];
+
+// Channel names on which ipcMain listens
+export const ipcMainChannels = {
+    CONFIG_UPDATE: "CONFIG_UPDATE"
+};
+
+// Channel names on which ipcRenderer listens
+export const ipcRendererChannels = {
+    SERVER_ERROR: "SERVER_ERROR"
+};
+
+export const downloadStatus = {
+    finished: 1,
+    error: 2,
+    cancelled: 3,
+    paused: 4,
+    idle: 5,
+    downloading: 6
+};

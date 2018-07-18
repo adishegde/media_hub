@@ -59,6 +59,7 @@
         "redux-thunk": "^2.3.0",
         "semantic-ui-css": "^2.3.2",
         "semantic-ui-react": "^0.81.2",
+        "unused-filename": "^1.0.0",
         "uuid": "^3.2.1",
         "winston": "^3.0.0-rc5"
     }

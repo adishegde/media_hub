@@ -1,13 +1,7 @@
 /* File data page */
 import { connect } from "react-redux";
-import { withRouter } from "react-router";
 
-import {
-    getDisplayURL,
-    getData,
-    isLoading,
-    getError
-} from "app/render/selectors/files";
+import { getDisplayURL, getData, isLoading } from "app/render/selectors/files";
 import FileDataComponent from "app/render/components/FileData";
 import { displayFile } from "app/render/actions/files";
 
@@ -22,18 +16,4 @@ function mapStateToProps(state) {
     };
 }
 
-function mapDispatchToProps(dispatch) {
-    return {
-        onFileItemClick: file => {
-            // We need to append to display list, hence pos is negative
-            dispatch(displayFile(file, -1));
-        }
-    };
-}
-
-export default withRouter(
-    connect(
-        mapStateToProps,
-        mapDispatchToProps
-    )(FileDataComponent)
-);
+export default connect(mapStateToProps)(FileDataComponent);

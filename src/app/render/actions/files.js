@@ -1,5 +1,4 @@
 import Client from "app/utils/client";
-import { remote } from "electron";
 
 import {
     isRequested,
@@ -7,8 +6,6 @@ import {
     isLoading,
     getData
 } from "app/render/selectors/files";
-
-const config = remote.getGlobal("config");
 
 export const REQUEST_FILEDATA = "REQUEST_FILEDATA";
 export const RECEIVE_FILEDATA = "RECEIVE_FILEDATA";
@@ -50,23 +47,20 @@ function fetchFileData(file, pos) {
             // Starting new request
             dispatch(requestFileData(file, pos));
 
-            // Create new client from config data
-            let client = new Client(config._);
-
             // Fetch meta data
-            let data = await client.getMeta(file.url);
+            let data = await Client.getMeta(file.url);
 
             // If directory then fetch it's content also. It will be stored
             // along with meta data.
             if (data.type === "dir") {
-                data.children = (await client.getDirectoryInfo(
+                data.children = (await Client.getDirectoryInfo(
                     file.url
                 )).children;
             }
 
             dispatch(receiveFileData(file, data));
         } catch (err) {
-            dispatch(errorFileData(file, err));
+            dispatch(errorFileData(file, err.toString()));
         }
     };
 }
