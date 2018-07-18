@@ -63,34 +63,37 @@ export function download(url) {
 
         dispatch(initiateDownload(id, url, file));
 
-        if (file.type === "file") {
-            Client.downloadFile(url, id, {
-                onStart: path => {
-                    dispatch(startDownload(id, path));
-                },
-                onProgress: ratio => {
-                    // NOTE: Progress events are emitted rapidly. If performance
-                    // problems occur then we'll need to add a time based check
-                    // here.
-                    dispatch(updateProgressDownload(id, ratio));
-                },
-                onError: err => {
-                    dispatch(updateStatusDownload(id, status.error, err));
-                },
-                onCancel: () => {
-                    dispatch(updateStatusDownload(id, status.cancelled));
-                },
-                onFinish: () => {
-                    dispatch(updateStatusDownload(id, status.finished));
-                }
-            });
+        let downloadFunc = Client.downloadFile;
+
+        if (file.type === "dir") {
+            downloadFunc = Client.downloadDirectory;
         }
+
+        downloadFunc(url, id, {
+            onStart: path => {
+                dispatch(startDownload(id, path));
+            },
+            onProgress: ratio => {
+                // NOTE: Progress events are emitted rapidly. If performance
+                // problems occur then we'll need to add a time based check
+                // here.
+                dispatch(updateProgressDownload(id, ratio));
+            },
+            onError: err => {
+                dispatch(updateStatusDownload(id, status.error, err));
+            },
+            onFinish: () => {
+                dispatch(updateStatusDownload(id, status.finished));
+            }
+        });
     };
 }
 
 // Cancel download of URL
 export function cancelDownload(id) {
-    return () => {
-        Client.cancelDownload(id);
+    return dispatch => {
+        Client.cancelDownload(id, () => {
+            dispatch(updateStatusDownload(id, status.cancelled));
+        });
     };
 }

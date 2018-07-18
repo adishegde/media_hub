@@ -92,7 +92,12 @@ export default class FileDownloader extends EventEmitter {
                     // emitted to notify the user about the resolved filename
                     // and size of file. Moreover it makes sense to have error
                     // events after the start event
-                    this.emit(events.start, this._filepath, this._size);
+                    this.emit(
+                        events.start,
+                        this._filepath,
+                        this._size,
+                        this.url
+                    );
                     this._status = status.downloading;
 
                     // Create a write stream. If directory does not exist or
@@ -112,7 +117,7 @@ export default class FileDownloader extends EventEmitter {
                             // emitted only if fileStream opened successfully
                             this._response.on("data", chunk => {
                                 this._bytesDownloaded += chunk.length;
-                                this._progress();
+                                this._progress(chunk.length);
                             });
 
                             // Pipe data to write stream i.e. write to file
@@ -138,7 +143,7 @@ export default class FileDownloader extends EventEmitter {
             })
             .then(() => {
                 this._status = status.error;
-                this.emit(events.error, err.toString());
+                this.emit(events.error, err.toString(), this.url);
             });
     }
 
@@ -171,15 +176,15 @@ export default class FileDownloader extends EventEmitter {
     }
 
     // Emit download progress event
-    _progress() {
+    _progress(delta) {
         let ratio = 0;
         if (this._size) ratio = this._bytesDownloaded / this._size;
-        this.emit(events.progress, ratio);
+        this.emit(events.progress, ratio, delta, this.url);
     }
 
     // Emit finish event when download has finished
     _finish() {
-        this.emit(events.finish);
+        this.emit(events.finish, this.url);
         this._status = status.finished;
     }
 
@@ -187,11 +192,15 @@ export default class FileDownloader extends EventEmitter {
     cancel() {
         this._cleanUp()
             .catch(err => {
-                this.emit(events.error, err);
+                this.emit(events.error, err, this.url);
             })
             .then(() => {
-                this.emit(events.cancel);
+                this.emit(events.cancel, this.url);
                 this._status = status.cancelled;
             });
+    }
+
+    getBytesDownloaded() {
+        return this._bytesDownloaded;
     }
 }
