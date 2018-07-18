@@ -58,7 +58,7 @@ export default class MetaData {
         this.updateDownload = this.updateDownload.bind(this);
     }
 
-    // Update data of path.
+    // Update data of path. Also traverses up the file tree to update parents
     // Params:
     // - path: Path whose meta data is to be updated
     //
@@ -133,7 +133,7 @@ export default class MetaData {
             }
 
             // Update meta data
-            return this.db.put(id, {
+            let retVal = await this.db.put(id, {
                 name,
                 description,
                 downloads,
@@ -143,6 +143,27 @@ export default class MetaData {
                 size,
                 id
             });
+
+            let parentPath = Path.dirname(path);
+
+            try {
+                let data = await this.db.get(uuid(parentPath, UUID_NAMESPACE));
+
+                // Update parent directory. i.e. we traverse up the tree
+                // Fileindexer calls udpate for the specific path changed. This
+                // means that we are responsible for updating parents.
+                //
+                // NOTE: Updating parents shouldn't take a toll on performance.
+                // If it does we can optimize it by sending the child that was
+                // updated as a parameter.
+                await this.update(parentPath);
+            } catch (err) {
+                // Err occurs if there is an error updating parentPath
+                // or if parentPath is not there in db. In both cases
+                // ignore
+            }
+
+            return retVal;
         } catch (err) {
             logger.error(`MetaData.update: ${err}`);
             logger.debug(`MetaData.update: ${err.stack}`);
@@ -171,10 +192,25 @@ export default class MetaData {
     updateDownload(path, delta = 1) {
         let id = uuid(path, UUID_NAMESPACE);
 
-        return this.db.get(id).then(data => {
-            data.downloads += delta;
-            return this.db.put(id, data);
-        });
+        return this.db
+            .get(id)
+            .then(data => {
+                data.downloads += delta;
+                return this.db.put(id, data);
+            })
+            .then(retVal => {
+                // We also need to update parent's download value.
+                // NOTE: If this is might cause perfomance problems.
+                let parentPath = Path.dirname(path);
+                this.db
+                    .get(uuid(parentPath, UUID_NAMESPACE))
+                    .then(() => {
+                        this.update(parentPath);
+                    })
+                    .catch(() => {
+                        // Ignore error. If parent path is not there in db then ignore
+                    });
+            });
     }
 
     // Remove path's meta data
