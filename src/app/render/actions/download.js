@@ -1,11 +1,9 @@
-/* Currently action creators send ipc messages to update/start downloads. It
- * might be better to abstract away the ipc messages to client for modularity
- * in the future. */
-import { ipcRenderer } from "electron";
 import uuid from "uuid/v4";
 
 import { getData } from "app/render/selectors/files";
-import { downloadStatus, ipcMainChannels as Mch } from "app/utils/constants";
+import Client from "app/utils/client";
+import { events } from "app/utils/fileDownloader";
+import { downloadStatus as status } from "app/utils/constants";
 
 export const START_DOWNLOAD = "START_DOWNLOAD";
 export const UPDATE_STATUS_DOWNLOAD = "UPDATE_STATUS_DOWNLOAD";
@@ -57,19 +55,35 @@ export function download(url) {
         // Get file data from state
         let file = getData(state, url);
 
-        // Directory download is not supported yet
-        //
         // Due to the current flow of the app, files can be downloaded only from
         // the file data page. This means that the filedata should be available
         // when downloading.
+        // Generate new download id
+        let id = uuid();
+
+        dispatch(initiateDownload(id, url, file));
+
         if (file.type === "file") {
-            // Generate new download id
-            let id = uuid();
-
-            dispatch(initiateDownload(id, url, file));
-
-            // Send download request
-            ipcRenderer.send(Mch.DL_START, url, id);
+            Client.downloadFile(url, id, {
+                onStart: path => {
+                    dispatch(startDownload(id, path));
+                },
+                onProgress: ratio => {
+                    // NOTE: Progress events are emitted rapidly. If performance
+                    // problems occur then we'll need to add a time based check
+                    // here.
+                    dispatch(updateProgressDownload(id, ratio));
+                },
+                onError: err => {
+                    dispatch(updateStatusDownload(id, status.error, err));
+                },
+                onCancel: () => {
+                    dispatch(updateStatusDownload(id, status.cancelled));
+                },
+                onFinish: () => {
+                    dispatch(updateStatusDownload(id, status.finished));
+                }
+            });
         }
     };
 }
@@ -77,13 +91,6 @@ export function download(url) {
 // Cancel download of URL
 export function cancelDownload(id) {
     return () => {
-        ipcRenderer.send(Mch.DL_CANCEL, id);
-    };
-}
-
-// Toggle between pause and resume state of download
-export function toggleStateDownload(id) {
-    return () => {
-        ipcRenderer.send(Mch.DL_TOGGLE, id);
+        Client.cancelDownload(id);
     };
 }

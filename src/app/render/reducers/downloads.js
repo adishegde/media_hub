@@ -5,7 +5,7 @@ import {
     PROGRESS_DOWNLOAD,
     INITIATE_DOWNLOAD
 } from "app/render/actions/download";
-import { downloadStatus } from "app/utils/constants";
+import { downloadStatus as status } from "app/utils/constants";
 
 export default function downloads(state = {}, action) {
     switch (action.type) {
@@ -16,7 +16,7 @@ export default function downloads(state = {}, action) {
                     file: action.file,
                     url: action.url,
                     id: action.id,
-                    status: downloadStatus.downloading,
+                    status: status.idle,
                     progress: 0
                 }
             };
@@ -26,6 +26,7 @@ export default function downloads(state = {}, action) {
                 ...state,
                 [action.id]: {
                     ...state[action.id],
+                    status: status.downloading,
                     path: action.path
                 }
             };

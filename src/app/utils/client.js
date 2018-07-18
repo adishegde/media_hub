@@ -1,15 +1,33 @@
 /* Extends the core client to support HTTP requests */
 import { get as http } from "http";
+import { remote } from "electron";
+import * as Path from "path";
 
 import ClientCore from "core/client/client";
+import FileDownloader, { events } from "./fileDownloader";
+import { addLogFile } from "core/utils/log";
+import { CLIENT_LOG } from "app/utils/constants";
+
+const config = remote.getGlobal("config");
+const app = remote.app;
+
+// Add log file for client logger here so that we can use Client instance
+// without explicitly adding log files everytime.
+addLogFile("client", Path.join(app.getPath("userData"), CLIENT_LOG), "debug");
 
 // No point in doing a lot of checks on URL like in the case of cli since the
 // app is responsible for URL. Thus as long as data is managed correctly by the
 // app no unexpected errors should occur.
-export default class Client extends ClientCore {
+class Client extends ClientCore {
     constructor(config) {
         // Setup options by calling core client constructor
         super(config);
+
+        // Maintains a mapping between file ids and their download items
+        this.downloads = {};
+
+        // NOTE: Incoming path is not checked.
+        this.incoming = config.incoming;
     }
 
     // Fetches meta data of file at URL
@@ -123,4 +141,29 @@ export default class Client extends ClientCore {
             }
         );
     }
+
+    // Allowing the caller to set the id gives a degree of flexibility
+    downloadFile(url, id, directory = this.incoming, elist) {
+        // Ignore requests where url and download are not defined
+        if (!url || !directory) return;
+
+        this.downloads[id] = new FileDownloader(url, directory);
+        this.downloads[id]
+            .on(events.start, elist.onStart)
+            .on(events.progress, elist.onProgress)
+            .on(events.error, elist.onError)
+            .on(events.cancel, elist.onCancel)
+            .on(events.onFinish, elist.onFinish);
+
+        // Return download item so caller can register event listeners
+        this.downloads[id].start();
+    }
+
+    cancelDownload(id) {
+        this.downloads[id].cancel();
+    }
 }
+
+const client = new Client(config._);
+
+export default client;

@@ -30,10 +30,10 @@ export default function DownloadItem({
         );
     } else if (
         status === downloadStatus.cancelled ||
-        status === downloadStatus.done
+        status === downloadStatus.finished
     ) {
         let desc = "Download Cancelled";
-        if (status === downloadStatus.done) {
+        if (status === downloadStatus.finished) {
             desc = `Downloaded to ${path}`;
         }
 
@@ -48,9 +48,6 @@ export default function DownloadItem({
             </Item>
         );
     } else {
-        let icon = "pause";
-        if (status === downloadStatus.paused) icon = "play";
-
         return (
             <Item>
                 <FileIcon as={Item.Icon} name={name} />
@@ -61,19 +58,10 @@ export default function DownloadItem({
                         <span>{`Downloading to ${path}`}</span>
                     </Item.Description>
                     <Item.Extra>
-                        <Grid columns={3}>
-                            <Grid.Column width={1}>
-                                <Button
-                                    color="teal"
-                                    icon={icon}
-                                    onClick={() => {
-                                        onToggle(id);
-                                    }}
-                                />
-                            </Grid.Column>
+                        <Grid columns={2}>
                             <Grid.Column width={5}>
                                 <Progress
-                                    percent={(progress * 100).toFixed(2)}
+                                    percent={Math.floor(progress * 100)}
                                     indicating
                                     progress
                                     size="small"

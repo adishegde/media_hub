@@ -17,9 +17,6 @@ function mapDispatchToProps(dispatch) {
     return {
         onCancel: id => {
             dispatch(cancelDownload(id));
-        },
-        onToggle: id => {
-            dispatch(toggleStateDownload(id));
         }
     };
 }
