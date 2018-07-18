@@ -40,18 +40,7 @@ Program.version("0.4.1")
         "Name of network for which response UDP response will be sent.",
         DEFAULT_NETWORK
     )
-    .option(
-        "--pollingInterval <time>",
-        "Polling interval for file indexing in milliseconds.",
-        val => parseInt(val),
-        DEFAULT.pollingInterval
-    )
     .option("--db <path>", "Path to meta data file.", DEFAULT.db)
-    .option(
-        "--dbwriteInterval <time>",
-        "Time between consecutive writes to db in milliseconds.",
-        DEFAULT.dbWriteInterval
-    )
     .option(
         "--maxResults <number>",
         "Maximum number of results to send in response",
@@ -103,9 +92,7 @@ const SERVEROPTS = [
     "httpPort",
     "network",
     "share",
-    "pollingInterval",
     "db",
-    "dbwriteInterval",
     "maxResults",
     "ignore",
     "selfRespond",
