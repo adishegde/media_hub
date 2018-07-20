@@ -45,7 +45,7 @@ class Startup extends React.Component {
         let shareItems = [];
         share.forEach((path, ind) => {
             shareItems.push(
-                <List.Item textAlign="vertical" key={ind}>
+                <List.Item key={ind}>
                     <List.Content floated="right">
                         <Button
                             icon
@@ -83,7 +83,6 @@ class Startup extends React.Component {
                             App Setup
                         </Header>
                         <Segment
-                            textAlign="left"
                             style={{ maxHeight: "40%", width: "100%" }}
                             textAlign="center"
                         >
@@ -97,7 +96,7 @@ class Startup extends React.Component {
                                     inverted
                                     color="teal"
                                 >
-                                    <List divided textAlign="left" inverted>
+                                    <List divided inverted>
                                         {shareItems}
                                     </List>
                                 </Segment>
