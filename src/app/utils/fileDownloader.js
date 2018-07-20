@@ -65,6 +65,8 @@ export default class FileDownloader extends EventEmitter {
             fileName = fileName.replace(`inline; filename="`, "");
             // Remove trailing double quote
             fileName = fileName.slice(0, fileName.length - 1);
+            // Remove percent encoded characters
+            fileName = decodeURIComponent(fileName);
 
             // Get full file path
             let filePath = Path.join(this.directory, fileName);

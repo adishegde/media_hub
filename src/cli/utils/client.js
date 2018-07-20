@@ -52,6 +52,8 @@ function _download(url, path, pathIsDir, callback) {
                 fileName = fileName.replace(`inline; filename="`, "");
                 // Remove trailing double quote
                 fileName = fileName.slice(0, fileName.length - 1);
+                // Remove percent encoded characters
+                fileName = decodeURIComponent(fileName);
 
                 path = Path.join(path, fileName);
             }

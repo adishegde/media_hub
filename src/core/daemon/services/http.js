@@ -286,7 +286,9 @@ export default class HTTPService {
             res.writeHead(200, {
                 "Content-Type": Mime.lookup(path) || "application/octet-stream",
                 "Content-Length": `${data.size}`,
-                "Content-Disposition": `inline; filename="${data.name}"`
+                "Content-Disposition": `inline; filename="${encodeURIComponent(
+                    data.name
+                )}"`
             });
 
             let fileStream = Fs.createReadStream(path);
