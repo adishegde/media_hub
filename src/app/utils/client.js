@@ -393,6 +393,13 @@ class Client extends ClientCore {
                     // info and then download the contents of the child
                     // directory
                     mkdir(childPath)
+                        .catch(err => {
+                            // If directory already exists then ignore and continue
+                            // else rethrow error
+                            if (err.code !== "EEXIST") {
+                                throw err;
+                            }
+                        })
                         .then(() => this.getDirectoryInfo(childUrl))
                         .then(data =>
                             this._downloadDirectory(

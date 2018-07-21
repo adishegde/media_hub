@@ -5,10 +5,14 @@ import {
     PROGRESS_DOWNLOAD,
     INITIATE_DOWNLOAD
 } from "app/render/actions/download";
+import { LOAD_STATE } from "app/render/actions/index";
 import { downloadStatus as status } from "app/utils/constants";
 
 export default function downloads(state = {}, action) {
     switch (action.type) {
+        case LOAD_STATE:
+            return { ...action.state.downloads };
+
         case INITIATE_DOWNLOAD:
             return {
                 ...state,
@@ -17,6 +21,7 @@ export default function downloads(state = {}, action) {
                     url: action.url,
                     id: action.id,
                     status: status.idle,
+                    date: action.date,
                     progress: 0
                 }
             };
