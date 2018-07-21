@@ -2,14 +2,19 @@
     "name": "media_hub",
     "license": "MIT",
     "author": "Aditya Shridhar Hegde <adishegde@gmail.com>",
-    "version": "1.0.0",
+    "version": "0.1.0",
+    "licence": "MIT",
     "scripts": {
         "precommit": "pretty-quick --staged",
+        "postinstall": "electron-builder install-app-deps",
         "start": "MH_ENV=development ELECTRON_DISABLE_SECURITY_WARNINGS=true electron --port=5858 .",
         "watch": "MH_ENV=development webpack --mode=development && webpack-dev-server --mode=development --content-base dist/ --inline --port 1234",
         "bundle": "webpack --mode=production",
         "build-cli": "babel src --ignore src/app -d cli-build",
-        "start-prod": "electron ."
+        "start-prod": "electron .",
+        "package": "electron-builder --dir",
+        "dist": "electron-builder",
+        "publish": "build --mac --win --linux -p always"
     },
     "devDependencies": {
         "babel-cli": "^6.26.0",
@@ -21,8 +26,8 @@
         "babel-preset-env": "^1.6.1",
         "css-loader": "^0.28.11",
         "electron": "^2.0.3",
+        "electron-builder": "^20.24.4",
         "electron-devtools-installer": "^2.2.4",
-        "electron-rebuild": "^1.7.3",
         "eslint": "^4.19.1",
         "file-loader": "^1.1.11",
         "html-webpack-plugin": "^3.2.0",
@@ -37,12 +42,7 @@
         "webpack": "^4.12.1",
         "webpack-cli": "^3.0.8",
         "webpack-dev-server": "^3.1.4",
-        "webpack-node-externals": "^1.7.2"
-    },
-    "main": "dist/main.js",
-    "description": "Tool for sharing files over LAN",
-    "dependencies": {
-        "chokidar": "^2.0.4",
+        "webpack-node-externals": "^1.7.2",
         "cli-progress": "^2.0.0",
         "cli-table": "^0.3.1",
         "commander": "^2.15.1",
@@ -61,5 +61,33 @@
         "unused-filename": "^1.0.0",
         "uuid": "^3.2.1",
         "winston": "^3.0.0-rc5"
+    },
+    "main": "app/index.js",
+    "description": "Tool for sharing files over LAN",
+    "dependencies": {
+        "chokidar": "^2.0.4",
+        "level": "^4.0.0"
+    },
+    "build": {
+        "appId": "com.electron.mediahub",
+        "productName": "Media Hub",
+        "files": [
+            "app/**/*",
+            "node_modules/**/*"
+        ],
+        "mac": {
+            "category": "public.app-category.productivity"
+        },
+        "win": {
+            "target": [
+                "nsis"
+            ]
+        },
+        "linux": {
+            "target": [
+                "deb",
+                "AppImage"
+            ]
+        }
     }
 }

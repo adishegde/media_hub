@@ -2,3 +2,5 @@ node_modules
 cli-build
 bin
 dist
+/app
+build

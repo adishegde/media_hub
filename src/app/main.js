@@ -40,7 +40,7 @@ let logLevel = "error";
 
 // Use dev server in development mode
 let htmlUrl = Url.format({
-    pathname: Path.resolve("dist", "index.html"),
+    pathname: Path.resolve(__dirname, "index.html"),
     protocol: "file:",
     slashes: true
 });
