@@ -1,6 +1,6 @@
 import { connect } from "react-redux";
 
-import { getList } from "app/render/selectors/download";
+import { getList, sortList } from "app/render/selectors/download";
 import {
     cancelDownload,
     toggleStateDownload
@@ -9,7 +9,7 @@ import DownloadListComponent from "app/render/components/Download/index";
 
 function mapStateToProps(state) {
     return {
-        downloads: getList(state)
+        downloads: sortList(getList(state))
     };
 }
 

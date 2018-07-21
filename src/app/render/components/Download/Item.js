@@ -12,10 +12,12 @@ export default function DownloadItem({
     progress,
     path,
     status,
+    date,
     onCancel,
     onToggle
 }) {
     let content = null;
+    date = new Date(date).toDateString();
 
     if (error) {
         return (
@@ -23,7 +25,9 @@ export default function DownloadItem({
                 <FileIcon as={Item.Icon} name={name} />
                 <Item.Content>
                     <Item.Header>{name}</Item.Header>
-                    <Item.Meta>{`Size: ${formatBytes(size)}`}</Item.Meta>
+                    <Item.Meta>{`Size: ${formatBytes(
+                        size
+                    )} Date: ${date}`}</Item.Meta>
                     <Item.Description>{`Error: ${error}`}</Item.Description>
                 </Item.Content>
             </Item>
@@ -42,7 +46,9 @@ export default function DownloadItem({
                 <FileIcon as={Item.Icon} name={name} />
                 <Item.Content>
                     <Item.Header>{name}</Item.Header>
-                    <Item.Meta>{`Size: ${formatBytes(size)}`}</Item.Meta>
+                    <Item.Meta>{`Size: ${formatBytes(
+                        size
+                    )} Date: ${date}`}</Item.Meta>
                     <Item.Description>{desc}</Item.Description>
                 </Item.Content>
             </Item>
@@ -53,7 +59,9 @@ export default function DownloadItem({
                 <FileIcon as={Item.Icon} name={name} />
                 <Item.Content>
                     <Item.Header>{name}</Item.Header>
-                    <Item.Meta>{`Size: ${formatBytes(size)}`}</Item.Meta>
+                    <Item.Meta>{`Size: ${formatBytes(
+                        size
+                    )} Date: ${date}`}</Item.Meta>
                     <Item.Description>
                         <span>{`Downloading to ${path}`}</span>
                     </Item.Description>

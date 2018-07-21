@@ -26,7 +26,8 @@ function initiateDownload(id, url, file) {
         type: INITIATE_DOWNLOAD,
         file,
         url,
-        id
+        id,
+        date: new Date().toString()
     };
 }
 
@@ -82,8 +83,9 @@ export function download(url) {
             onError: err => {
                 dispatch(updateStatusDownload(id, status.error, err));
             },
-            onFinish: () => {
-                dispatch(updateStatusDownload(id, status.finished));
+            onFinish: errList => {
+                // Directory download passes a list of individual file errors
+                dispatch(updateStatusDownload(id, status.finished, errList));
             }
         });
     };

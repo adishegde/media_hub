@@ -17,6 +17,7 @@ export default function downloads(state = {}, action) {
                     url: action.url,
                     id: action.id,
                     status: status.idle,
+                    date: action.date,
                     progress: 0
                 }
             };
