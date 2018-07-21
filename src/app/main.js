@@ -153,18 +153,25 @@ function init() {
 
 // Create new server instance
 function createServer() {
-    // Stop server if it's running
-    if (server) server.stop();
+    let promises = [];
 
-    try {
-        // Create new server using app settings
-        // Passes existing db instance
-        server = new Server(db, config._);
-        server.start();
-    } catch (err) {
-        // if error occurs then emit error onto browser window
-        mainWindow.webContents.send(Rch.SERVER_ERROR, err);
-    }
+    // Stop server if it's running
+    if (server) promises = server.stop();
+
+    Promise.all(promises)
+        .catch(err => {
+            logger.error(`Main: Error creating server. ${err}`);
+        })
+        .then(() => {
+            // Create new server using app settings
+            // Passes existing db instance
+            server = new Server(db, config._);
+            server.start();
+        })
+        .catch(err => {
+            // if error occurs then emit error onto browser window
+            mainWindow.webContents.send(Rch.SERVER_ERROR, err);
+        });
 }
 
 // Listen for config update messages from server

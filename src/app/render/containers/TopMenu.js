@@ -5,7 +5,8 @@ import TopMenuComponent from "app/render/components/TopMenu";
 
 const options = [
     { name: "Home", path: "/" },
-    { name: "Downloads", path: "/downloads" }
+    { name: "Downloads", path: "/downloads" },
+    { name: "Settings", path: "/settings" }
 ];
 
 function mapToProps(state, { location, history }) {

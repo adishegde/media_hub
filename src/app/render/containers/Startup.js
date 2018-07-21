@@ -16,6 +16,8 @@ import {
 } from "semantic-ui-react";
 import { withRouter } from "react-router";
 
+import { ipcMainChannels as Mch } from "app/utils/constants";
+
 // The config should be obtained from the export of main process. It is not
 // stored in the redux store to keep the config file as the single source of
 // truth
@@ -26,11 +28,16 @@ class Startup extends React.Component {
     constructor(props) {
         super(props);
 
+        let shareIncoming = true;
+        if (config._.share)
+            shareIncoming = config._.share.includes(config._.incoming);
+
         this.state = {
-            share: new Set(),
-            incoming: "",
-            shareIncoming: true,
-            error: ""
+            share: new Set(config._.share),
+            incoming: config._.incoming || "",
+            shareIncoming,
+            error: "",
+            selfRespond: config._.selfRespond || false
         };
 
         this.onShareAdd = this.onShareAdd.bind(this);
@@ -40,7 +47,7 @@ class Startup extends React.Component {
     }
 
     render() {
-        let { share, incoming, shareIncoming, error } = this.state;
+        let { share, incoming, shareIncoming, error, selfRespond } = this.state;
 
         let shareItems = [];
         share.forEach((path, ind) => {
@@ -124,6 +131,13 @@ class Startup extends React.Component {
                                     onClick={this.onIncomingChange}
                                     label="Share download directory (Highly Recommended)"
                                     checked={shareIncoming}
+                                    name="shareIncoming"
+                                />
+                                <Checkbox
+                                    onClick={this.onIncomingChange}
+                                    label="Search results should include my files also (Recommended for testing)"
+                                    checked={selfRespond}
+                                    name="selfRespond"
                                 />
                             </Segment>
                         </Segment>
@@ -174,10 +188,10 @@ class Startup extends React.Component {
         );
     }
 
-    onIncomingChange(event, { type }) {
+    onIncomingChange(event, { type, name }) {
         if (type === "checkbox") {
-            this.setState(({ shareIncoming }) => ({
-                shareIncoming: !shareIncoming
+            this.setState(props => ({
+                [name]: !props[name]
             }));
             return;
         }
@@ -200,7 +214,7 @@ class Startup extends React.Component {
     }
 
     onConfirm() {
-        let { share, incoming, shareIncoming } = this.state;
+        let { share, incoming, shareIncoming, selfRespond } = this.state;
 
         if (share.size === 0) {
             this.setState({
@@ -217,9 +231,10 @@ class Startup extends React.Component {
             share = Array.from(share);
 
             // Add configuration to config
-            ipcRenderer.send("update-config", {
+            ipcRenderer.send(Mch.CONFIG_UPDATE, {
                 share,
-                incoming
+                incoming,
+                selfRespond
             });
 
             // Redirect to home page

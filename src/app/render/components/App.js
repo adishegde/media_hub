@@ -9,11 +9,15 @@ import FilePage from "app/render/containers/FilePage";
 import TopMenu from "app/render/containers/TopMenu";
 import DownloadPage from "app/render/containers/DownloadList";
 
+// Currently Startup is being used as the settings page. This will be changed
+// when more options are added to GUI.
+
 // Get the config handler exported from main process
 const config = remote.getGlobal("config");
 
 export default class App extends React.Component {
     componentDidMount() {
+        console.log("reload");
         let { onClose, onLoad } = this.props;
 
         // Register handler to clean up before close
@@ -50,6 +54,7 @@ export default class App extends React.Component {
                     <Route path="/results" component={SearchResult} />
                     <Route path="/file" component={FilePage} />
                     <Route path="/downloads" component={DownloadPage} />
+                    <Route path="/settings" component={Startup} />
                 </Switch>
             </div>
         );
