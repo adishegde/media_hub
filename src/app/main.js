@@ -11,7 +11,9 @@ import {
     CLIENT_LOG,
     DB,
     APP_NAME,
-    DEFAULT_CONFIG
+    DEFAULT_CONFIG,
+    ipcMainChannels as Mch,
+    ipcRendererChannels as Rch
 } from "app/utils/constants";
 import Server from "core/daemon/server";
 import Config from "core/utils/config";
@@ -134,19 +136,6 @@ function init() {
         console.log(err);
     }
 
-    // Listen for messages from server
-    ipcMain.on("update-config", (event, update) => {
-        // Assign updated properties to config
-        Object.assign(config._, update);
-
-        // Write new config to settings and restart server
-        config.write().then(() => {
-            // Currently restarting server is equivalent to stopping old server and
-            // creating a new instance
-            createServer();
-        });
-    });
-
     // In development install extensions
     if (process.env.MH_ENV === "development") {
         logger.info("Main: Development mode. Adding dev-tools.");
@@ -174,9 +163,47 @@ function createServer() {
         server.start();
     } catch (err) {
         // if error occurs then emit error onto browser window
-        mainWindow.webContents.send("server-error", err);
+        mainWindow.webContents.send(Rch.SERVER_ERROR, err);
     }
 }
+
+// Listen for config update messages from server
+ipcMain.on(Mch.CONFIG_UPDATE, (event, update) => {
+    // Assign updated properties to config
+    Object.assign(config._, update);
+
+    // Write new config to settings and restart server
+    config.write().then(() => {
+        // Currently restarting server is equivalent to stopping old server and
+        // creating a new instance
+        createServer();
+    });
+});
+
+ipcMain.on(Mch.SAVE_STATE, (e, state) => {
+    // We write state to db. The key "redux" will not clash with the uuid so
+    // no risk using db.
+    // NOTE: We don't wait for promise to be resolved here. Might cause some
+    // problems.
+    db.put("redux", state)
+        .catch(err => {
+            logger.error(`Main: ${err}`);
+        })
+        .then(() => {
+            mainWindow.webContents.send(Rch.SAVED_STATE);
+        });
+});
+
+ipcMain.on(Mch.GET_STATE, () => {
+    db.get("redux")
+        .then(data => {
+            mainWindow.webContents.send(Rch.GET_STATE, data);
+        })
+        .catch(err => {
+            // Error mostly due to key not found. We just ignore it.
+            logger.info(`Main: ${err}`);
+        });
+});
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
