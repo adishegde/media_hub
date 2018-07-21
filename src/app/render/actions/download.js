@@ -84,8 +84,14 @@ export function download(url) {
                 dispatch(updateStatusDownload(id, status.error, err));
             },
             onFinish: errList => {
-                // Directory download passes a list of individual file errors
-                dispatch(updateStatusDownload(id, status.finished, errList));
+                if (file.type === "dir") {
+                    // Directory download passes a list of individual file errors
+                    dispatch(
+                        updateStatusDownload(id, status.finished, errList)
+                    );
+                } else {
+                    dispatch(updateStatusDownload(id, status.finished));
+                }
             }
         });
     };

@@ -53,6 +53,8 @@ export default class FileDownloader extends EventEmitter {
                         }`
                     )
                 );
+                // Download failed
+                return;
             }
 
             // Store a reference to res
@@ -109,9 +111,7 @@ export default class FileDownloader extends EventEmitter {
                     })
                         .on("error", err => {
                             // Send error with user friendly message
-                            this._handleError(
-                                new Error("Error writing to file")
-                            );
+                            this._handleError(new Error("Writing to file"));
                         })
                         .on("open", () => {
                             // add event listeners to res only after file has been
@@ -141,7 +141,7 @@ export default class FileDownloader extends EventEmitter {
         this._cleanUp()
             .catch(clerr => {
                 // Concat clean up and actual err
-                err = new Error(`${err}\n${clerr}`);
+                err = new Error(`${err.message} and ${clerr.message}`);
             })
             .then(() => {
                 this._status = status.error;
@@ -156,19 +156,19 @@ export default class FileDownloader extends EventEmitter {
                 this._request.abort();
                 this._request = null;
             }
+            if (this._response) {
+                this._response.unpipe();
+                this._response = null;
+            }
             if (this._fileStream) {
-                if (this._response) {
-                    this._response.unpipe(this._fileStream);
-                    this._response = null;
-                }
+                this._fileStream.destroy();
 
-                this._fileStream.close(() => {
-                    Fs.unlink(this._filepath, err => {
-                        if (err) reject(new Error("Error while removing file"));
+                // Delete file
+                Fs.unlink(this._filepath, err => {
+                    if (err) reject(new Error("Removing file"));
 
-                        this._fileStream = null;
-                        resolve();
-                    });
+                    this._fileStream = null;
+                    resolve();
                 });
             } else {
                 // If file stream was not created then resolve promise
@@ -188,6 +188,11 @@ export default class FileDownloader extends EventEmitter {
     _finish() {
         this.emit(events.finish, this.url);
         this._status = status.finished;
+
+        // Assign to null so that the values may be garbage collected
+        this._request = null;
+        this._fileStream = null;
+        this._response = null;
     }
 
     // Cancel an ongoing download

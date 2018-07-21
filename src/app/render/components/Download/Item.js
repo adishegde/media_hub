@@ -1,5 +1,12 @@
 import React from "react";
-import { Item, Progress, Button, Grid } from "semantic-ui-react";
+import {
+    Item,
+    Progress,
+    Button,
+    Grid,
+    Accordion,
+    Icon
+} from "semantic-ui-react";
 
 import FileIcon from "../FileIcon";
 import { formatBytes } from "app/utils/functions";
@@ -19,7 +26,7 @@ export default function DownloadItem({
     let content = null;
     date = new Date(date).toDateString();
 
-    if (error) {
+    if (error && !Array.isArray(error)) {
         return (
             <Item>
                 <FileIcon as={Item.Icon} name={name} />
@@ -28,7 +35,7 @@ export default function DownloadItem({
                     <Item.Meta>{`Size: ${formatBytes(
                         size
                     )} Date: ${date}`}</Item.Meta>
-                    <Item.Description>{`Error: ${error}`}</Item.Description>
+                    <Item.Description>{`${error}`}</Item.Description>
                 </Item.Content>
             </Item>
         );
@@ -41,6 +48,31 @@ export default function DownloadItem({
             desc = `Downloaded to ${path}`;
         }
 
+        let errList;
+        if (error && error.length) {
+            errList = (
+                <Accordion
+                    panels={[
+                        {
+                            key: "files",
+                            title:
+                                "The following files could not be downloaded:",
+                            content: {
+                                key: 1, // Give arbitrary key
+                                content: (
+                                    <ul>
+                                        {error.map(file => (
+                                            <li key={file.path}>{file.path}</li>
+                                        ))}
+                                    </ul>
+                                )
+                            }
+                        }
+                    ]}
+                />
+            );
+        }
+
         return (
             <Item>
                 <FileIcon as={Item.Icon} name={name} />
@@ -50,6 +82,7 @@ export default function DownloadItem({
                         size
                     )} Date: ${date}`}</Item.Meta>
                     <Item.Description>{desc}</Item.Description>
+                    <Item.Extra>{errList}</Item.Extra>
                 </Item.Content>
             </Item>
         );
