@@ -160,19 +160,56 @@ function createServer() {
 
     Promise.all(promises)
         .catch(err => {
-            logger.error(`Main: Error creating server. ${err}`);
+            logger.error(`Main: Error stopping server. ${err}`);
         })
         .then(() => {
             // Create new server using app settings
             // Passes existing db instance
             server = new Server(db, config._);
-            server.start();
+            return Promise.all(Object.values(server.start()));
         })
         .catch(err => {
             // if error occurs then emit error onto browser window
             mainWindow.webContents.send(Rch.SERVER_ERROR, err);
+            logger.error(`Main: Error creating server. ${err}`);
         });
 }
+
+// Clean up resources on app exit
+function cleanup() {
+    let rendererFinish = Promise.resolve();
+    // Close main window. This will case mainWindow to start it's cleanup
+    if (mainWindow.isClosable()) {
+        mainWindow.close();
+        rendererFinish = new Promise(resolve => {
+            mainWindow.once("closed", () => {
+                resolve();
+            });
+        });
+    }
+
+    // Wait for renderer process to close
+    return rendererFinish
+        .then(() => {
+            if (server) return Promise.all(Object.values(server.stop()));
+        })
+        .catch(err => {
+            // An error in stopping server shouldn't affect the closing
+            // of db
+            logger.error(`Main: ${err}`);
+        })
+        .then(() => {
+            if (db) return db.close();
+        })
+        .then(() => {
+            logger.info("Main: Cleaned all resources. Shutting down.");
+        })
+        .catch(err => {
+            logger.error(`Main: ${err}`);
+        });
+}
+
+/* IPC listeners, to communicate with renderer process */
 
 // Listen for config update messages from server
 ipcMain.on(Mch.CONFIG_UPDATE, (event, update) => {
@@ -187,30 +224,7 @@ ipcMain.on(Mch.CONFIG_UPDATE, (event, update) => {
     });
 });
 
-ipcMain.on(Mch.SAVE_STATE, (e, state) => {
-    // We write state to db. The key "redux" will not clash with the uuid so
-    // no risk using db.
-    // NOTE: We don't wait for promise to be resolved here. Might cause some
-    // problems.
-    db.put("redux", state)
-        .catch(err => {
-            logger.error(`Main: ${err}`);
-        })
-        .then(() => {
-            mainWindow.webContents.send(Rch.SAVED_STATE);
-        });
-});
-
-ipcMain.on(Mch.GET_STATE, () => {
-    db.get("redux")
-        .then(data => {
-            mainWindow.webContents.send(Rch.GET_STATE, data);
-        })
-        .catch(err => {
-            // Error mostly due to key not found. We just ignore it.
-            logger.info(`Main: ${err}`);
-        });
-});
+/* Listeners for app events */
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -230,19 +244,7 @@ app.on("will-quit", e => {
 
     logger.info(`Main: App quit initiated. Cleaning up`);
 
-    // Stop server if it's running
-    if (server)
-        Promise.all(server.stop())
-            .then(() => {
-                if (db) return db.close();
-            })
-            .then(() => {
-                logger.info("Main: Cleaned all resources. Shutting down.");
-            })
-            .catch(err => {
-                logger.error(`Main: ${err}`);
-            })
-            .then(() => {
-                app.exit();
-            });
+    cleanup().then(() => {
+        app.exit();
+    });
 });
