@@ -59,12 +59,14 @@ export const audioExt = [".mp3", ".mpa", ".aac", ".oga", ".wav"];
 
 // Channel names on which ipcMain listens
 export const ipcMainChannels = {
-    CONFIG_UPDATE: "CONFIG_UPDATE"
+    CONFIG_UPDATE: "CONFIG_UPDATE",
+    UPDATE_APP: "UPDATE_APP"
 };
 
 // Channel names on which ipcRenderer listens
 export const ipcRendererChannels = {
-    SERVER_ERROR: "SERVER_ERROR"
+    SERVER_ERROR: "SERVER_ERROR",
+    UPDATE_AVAILABLE: "UPDATE_AVAILABLE"
 };
 
 export const downloadStatus = {

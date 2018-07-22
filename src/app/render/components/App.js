@@ -7,6 +7,7 @@ import SearchResult from "app/render/containers/SearchResults";
 import FilePage from "app/render/containers/FilePage";
 import TopMenu from "app/render/containers/TopMenu";
 import DownloadPage from "app/render/containers/DownloadList";
+import UpdateModal from "app/render/containers/UpdateModal";
 
 // Currently Startup is being used as the settings page. This will be changed
 // when more options are added to GUI.
@@ -22,6 +23,7 @@ export default function App({ showStartup }) {
     return (
         <div id="app" style={{ height: "100%", width: "100%" }}>
             <TopMenu />
+            <UpdateModal />
             <Switch>
                 <Route exact path="/" component={Home} />
                 <Route path="/results" component={SearchResult} />

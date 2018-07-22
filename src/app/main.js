@@ -4,6 +4,7 @@ import * as Url from "url";
 import * as Fs from "fs";
 import Level from "level";
 import Winston from "winston";
+import { autoUpdater } from "electron-updater";
 
 import {
     CONFIG_FILE,
@@ -21,6 +22,9 @@ import { addLogFile } from "core/utils/log";
 
 // Use daemon logger in main
 const logger = Winston.loggers.get("daemon");
+
+// Add logger to autoUpdater
+autoUpdater.logger = logger;
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -149,6 +153,9 @@ function init() {
             console.log(err);
         });
     }
+
+    // Start auto updater
+    autoUpdater.checkForUpdatesAndNotify();
 }
 
 // Create new server instance
@@ -222,6 +229,19 @@ ipcMain.on(Mch.CONFIG_UPDATE, (event, update) => {
         // creating a new instance
         createServer();
     });
+});
+
+ipcMain.on(Mch.UPDATE_APP, () => {
+    logger.info("Main: Request to install update.");
+
+    cleanup().then(() => {
+        autoUpdater.quitAndInstall();
+    });
+});
+
+/* Autoupdater events help in managin renderer UI */
+autoUpdater.on("update-downloaded", info => {
+    ipcMain.send(Rch.UPDATE_AVAILABLE, info);
 });
 
 /* Listeners for app events */
