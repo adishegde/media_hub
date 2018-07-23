@@ -8,6 +8,7 @@ import FilePage from "app/render/containers/FilePage";
 import TopMenu from "app/render/containers/TopMenu";
 import DownloadPage from "app/render/containers/DownloadList";
 import UpdateModal from "app/render/containers/UpdateModal";
+import About from "app/render/containers/About";
 
 // Currently Startup is being used as the settings page. This will be changed
 // when more options are added to GUI.
@@ -30,6 +31,7 @@ export default function App({ showStartup }) {
                 <Route path="/file" component={FilePage} />
                 <Route path="/downloads" component={DownloadPage} />
                 <Route path="/settings" component={Startup} />
+                <Route path="/about" component={About} />
             </Switch>
         </div>
     );

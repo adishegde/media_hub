@@ -77,3 +77,5 @@ export const downloadStatus = {
     idle: 5,
     downloading: 6
 };
+
+export const REPO_URL = "https://github.com/adishegde/media_hub";

@@ -3,20 +3,30 @@ import { withRouter } from "react-router";
 
 import TopMenuComponent from "app/render/components/TopMenu";
 
-const options = [
+const leftOpts = [
     { name: "Home", path: "/" },
-    { name: "Downloads", path: "/downloads" },
-    { name: "Settings", path: "/settings" }
+    { name: "Downloads", path: "/downloads" }
+];
+
+const rightOpts = [
+    { name: "Settings", path: "/settings" },
+    { name: "About", path: "/about" }
 ];
 
 function mapToProps(state, { location, history }) {
-    let menuProp = options.map(option => ({
+    let rightMenuProp = rightOpts.map(option => ({
+        ...option,
+        active: location.pathname === option.path
+    }));
+
+    let leftMenuProp = leftOpts.map(option => ({
         ...option,
         active: location.pathname === option.path
     }));
 
     return {
-        options: menuProp,
+        rightMenu: rightMenuProp,
+        leftMenu: leftMenuProp,
         onOptionClick: path => {
             history.push(path);
         }
