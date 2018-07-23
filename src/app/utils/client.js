@@ -1,6 +1,6 @@
 /* Extends the core client to support HTTP requests */
 import { get as http } from "http";
-import { remote } from "electron";
+import { remote, ipcRenderer } from "electron";
 import * as Path from "path";
 import * as Util from "util";
 import * as Fs from "fs";
@@ -9,9 +9,8 @@ import { Url } from "url";
 import ClientCore from "core/client/client";
 import FileDownloader, { events } from "./fileDownloader";
 import { addLogFile } from "core/utils/log";
-import { CLIENT_LOG } from "app/utils/constants";
+import { CLIENT_LOG, ipcRendererChannels as Rch } from "app/utils/constants";
 
-const config = remote.getGlobal("config");
 const app = remote.app;
 const mkdir = Util.promisify(Fs.mkdir);
 
@@ -186,8 +185,17 @@ class Client extends ClientCore {
             onFinish = dummyFunction
         }
     ) {
+        console.log(url, this.incoming);
+
         // Ignore requests where url and directory are not defined
-        if (!url || !this.incoming) return;
+        if (!url) {
+            onError("URL not defined");
+            return;
+        }
+        if (!this.incoming) {
+            onError("Download directory not defined", url);
+            return;
+        }
 
         this.downloads[id] = new FileDownloader(url, this.incoming);
         this.downloads[id]
@@ -259,7 +267,14 @@ class Client extends ClientCore {
     ) {
         try {
             // Ignore requests where url and directory are not defined
-            if (!url || !this.incoming) return;
+            if (!url) {
+                onError("URL not defined");
+                return;
+            }
+            if (!this.incoming) {
+                onError("Download directory not defined", url);
+                return;
+            }
 
             // We create an object to manage the list of download items
             // Each download item here corresponds to a file download
@@ -415,7 +430,7 @@ class Client extends ClientCore {
                         )
                         .catch(err => {
                             // The promise may be rejected if the directory
-                            // could not be created or fetching dir data failed                             //
+                            // could not be created or fetching dir data failed
 
                             // But we don't want the promise to be rejcted since
                             // we are using Promise.all. We call onError and
@@ -434,6 +449,15 @@ class Client extends ClientCore {
     }
 }
 
-const client = new Client(config._);
+let client = new Client(remote.getGlobal("config"));
 
-export default client;
+// Create new client instance if config is updated
+// This ensures that client get's updated with the new settings
+ipcRenderer.on(Rch.CONFIG_UPDATED, (e, updatedConfig) => {
+    client = new Client(updatedConfig);
+});
+
+// Export a function that always returns the updated client
+export default function getClient() {
+    return client;
+}

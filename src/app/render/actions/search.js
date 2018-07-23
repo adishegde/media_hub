@@ -1,6 +1,5 @@
 /* Exports search related action creators */
 import Client from "app/utils/client";
-
 import {
     isPageRequested,
     getCurrentPage,
@@ -74,7 +73,8 @@ export function search(query) {
         // Starting search
         dispatch(startSearch(query));
 
-        Client.search(query.search, query.page, query.param)
+        Client()
+            .search(query.search, query.page, query.param)
             .then(results => {
                 dispatch(receiveResults(query, results));
             })
@@ -113,7 +113,8 @@ export function fetchResultPage(delta) {
             // Starting search
             dispatch(startSearch(query));
 
-            Client.search(query.search, query.page, query.param)
+            Client()
+                .search(query.search, query.page, query.param)
                 .then(results => {
                     dispatch(receiveResults(query, results));
                 })

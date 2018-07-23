@@ -1,5 +1,4 @@
 import Client from "app/utils/client";
-
 import {
     isRequested,
     getError,
@@ -48,12 +47,12 @@ function fetchFileData(file, pos) {
             dispatch(requestFileData(file, pos));
 
             // Fetch meta data
-            let data = await Client.getMeta(file.url);
+            let data = await Client().getMeta(file.url);
 
             // If directory then fetch it's content also. It will be stored
             // along with meta data.
             if (data.type === "dir") {
-                data.children = (await Client.getDirectoryInfo(
+                data.children = (await Client().getDirectoryInfo(
                     file.url
                 )).children;
             }

@@ -66,7 +66,8 @@ export const ipcMainChannels = {
 // Channel names on which ipcRenderer listens
 export const ipcRendererChannels = {
     SERVER_ERROR: "SERVER_ERROR",
-    UPDATE_AVAILABLE: "UPDATE_AVAILABLE"
+    UPDATE_AVAILABLE: "UPDATE_AVAILABLE",
+    CONFIG_UPDATED: "CONFIG_UPDATED"
 };
 
 export const downloadStatus = {

@@ -228,6 +228,9 @@ ipcMain.on(Mch.CONFIG_UPDATE, (event, update) => {
 
     // Write new config to settings and restart server
     config.write().then(() => {
+        // Notify renderer that config was updated
+        mainWindow.webContents.send(Rch.CONFIG_UPDATED, config._);
+
         // Currently restarting server is equivalent to stopping old server and
         // creating a new instance
         createServer();

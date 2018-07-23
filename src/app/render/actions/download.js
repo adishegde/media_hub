@@ -64,10 +64,10 @@ export function download(url) {
 
         dispatch(initiateDownload(id, url, file));
 
-        let downloadFunc = Client.downloadFile;
+        let downloadFunc = Client().downloadFile;
 
         if (file.type === "dir") {
-            downloadFunc = Client.downloadDirectory;
+            downloadFunc = Client().downloadDirectory;
         }
 
         downloadFunc(url, id, {
@@ -100,7 +100,7 @@ export function download(url) {
 // Cancel download of URL
 export function cancelDownload(id) {
     return dispatch => {
-        Client.cancelDownload(id, () => {
+        Client().cancelDownload(id, () => {
             dispatch(updateStatusDownload(id, status.cancelled));
         });
     };
