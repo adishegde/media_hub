@@ -60,15 +60,13 @@ export const audioExt = [".mp3", ".mpa", ".aac", ".oga", ".wav"];
 // Channel names on which ipcMain listens
 export const ipcMainChannels = {
     CONFIG_UPDATE: "CONFIG_UPDATE",
-    SAVE_STATE: "SAVE_STATE",
-    GET_STATE: "GET_STATE"
+    UPDATE_APP: "UPDATE_APP"
 };
 
 // Channel names on which ipcRenderer listens
 export const ipcRendererChannels = {
     SERVER_ERROR: "SERVER_ERROR",
-    GET_STATE: "GET_STATE",
-    SAVED_STATE: "SAVED_STATE"
+    UPDATE_AVAILABLE: "UPDATE_AVAILABLE"
 };
 
 export const downloadStatus = {
@@ -79,3 +77,5 @@ export const downloadStatus = {
     idle: 5,
     downloading: 6
 };
+
+export const REPO_URL = "https://github.com/adishegde/media_hub";

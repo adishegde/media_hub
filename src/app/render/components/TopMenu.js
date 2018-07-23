@@ -2,7 +2,7 @@
 import React from "react";
 import { Menu, Segment } from "semantic-ui-react";
 
-export default function SideMenu({ options, onOptionClick }) {
+export default function TopMenu({ rightMenu, leftMenu, onOptionClick }) {
     let onClick = (e, { path }) => {
         onOptionClick(path);
     };
@@ -10,7 +10,7 @@ export default function SideMenu({ options, onOptionClick }) {
     return (
         <Segment basic inverted>
             <Menu inverted borderless fixed="top">
-                {options.map(option => (
+                {leftMenu.map(option => (
                     <Menu.Item
                         name={option.name}
                         active={option.active || false}
@@ -19,6 +19,17 @@ export default function SideMenu({ options, onOptionClick }) {
                         key={option.path}
                     />
                 ))}
+                <Menu.Menu position="right">
+                    {rightMenu.map(option => (
+                        <Menu.Item
+                            name={option.name}
+                            active={option.active || false}
+                            path={option.path}
+                            onClick={onClick}
+                            key={option.path}
+                        />
+                    ))}
+                </Menu.Menu>
             </Menu>
         </Segment>
     );

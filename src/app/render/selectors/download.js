@@ -12,7 +12,7 @@ export function getList(state) {
 
 // Returns  of downloads that are not ongoing
 export function filterCompleted(state) {
-    if (!state.downloads) return [];
+    if (!state.downloads) return {};
 
     return Object.keys(state.downloads).reduce((acc, id) => {
         let dstat = state.downloads[id].status;
@@ -24,7 +24,7 @@ export function filterCompleted(state) {
             acc[id] = state.downloads[id];
 
         return acc;
-    });
+    }, {});
 }
 
 // This takes a list of downloads and sorts it by date in reverse order
