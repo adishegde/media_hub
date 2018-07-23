@@ -57,6 +57,9 @@ if (process.env.MH_ENV === "development") {
 
     // Use info log level in development mode
     logLevel = "debug";
+
+    // This prevents collision of app path for dev and prod env
+    app.setPath("userData", `${app.getPath("userData")}_dev`);
 }
 
 function createWindow() {
