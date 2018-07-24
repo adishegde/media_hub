@@ -55,7 +55,8 @@ export default class FileIndex {
 
             this.watcher = Chokidar.watch(this.dirs, {
                 ignored: path => this.ignore.some(re => re.test(path)),
-                awaitWriteFinish: true
+                awaitWriteFinish: true,
+                ignoreInitial: true
             })
                 .on("add", this.meta.update)
                 .on("addDir", this.meta.update)
@@ -64,6 +65,12 @@ export default class FileIndex {
                 .on("unlinkDir", this.meta.remove)
                 .on("error", err => {
                     logger.info(`FileIndex: ${err}`);
+                })
+                .on("ready", () => {
+                    logger.info("FileIndex ready");
+                    this.meta.initialize(this.watcher.getWatched()).then(() => {
+                        logger.info("Meta data initialized");
+                    });
                 });
 
             // Return true if server was actually started

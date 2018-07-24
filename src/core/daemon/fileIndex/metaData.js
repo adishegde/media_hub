@@ -56,6 +56,47 @@ export default class MetaData {
         this.remove = this.remove.bind(this);
         this.update = this.update.bind(this);
         this.updateDownload = this.updateDownload.bind(this);
+        this._updatePath = this._updatePath.bind(this);
+        this.initialize = this.initialize.bind(this);
+    }
+
+    // Initializes db with the list of watched files.
+    // Calling update when chokidar is initialized takes a toll on
+    // performance. We thus use this to initialize database only.
+    //
+    // Param:
+    //  - watched: The object returned by chokidar's getWatched.
+    initialize(watched) {
+        // Update the contents single directory
+        let initDir = (path, children) => {
+            // First update all children
+            let promises = children.map(child =>
+                this._updatePath(Path.join(path, child))
+            );
+
+            // Return a promise that is resolved when all children have
+            // been updated. This promise can't be rejected since
+            // _updatePath doesn't propogate errors
+            return Promise.all(promises);
+        };
+
+        // The keys of watched are the list of all directories being wathced
+        let dirList = Object.keys(watched);
+
+        // We want the list of directories to ordered from inner most to outermost.
+        // Since each path is an absolute path (dependency on chokidar returns watched)
+        // it is enough to order it by decreasing key length
+        dirList.sort((a, b) => b.length - a.length);
+
+        // We initialize each directory after the previous initialization
+        // has completed
+        return dirList.reduce(
+            (prev, dir) =>
+                prev.then(() => {
+                    return initDir(dir, watched[dir]);
+                }),
+            Promise.resolve() // Initial value is a resolved promise
+        );
     }
 
     // Update data of path. Also traverses up the file tree to update parents
@@ -65,6 +106,37 @@ export default class MetaData {
     // Return Value:
     //  A promise that is resolved when the update is complete
     async update(path) {
+        await this._updatePath(path);
+
+        let parentPath = Path.dirname(path);
+
+        try {
+            let data = await this.db.get(uuid(parentPath, UUID_NAMESPACE));
+
+            // Update parent directory. i.e. we traverse up the tree
+            // Fileindexer calls udpate for the specific path changed. This
+            // means that we are responsible for updating parents.
+            //
+            // NOTE: Updating parents shouldn't take a toll on performance.
+            // If it does we can optimize it by sending the child that was
+            // updated as a parameter.
+            await this.update(parentPath);
+        } catch (err) {
+            // Err occurs if there is an error updating parentPath
+            // or if parentPath is not there in db. In both cases
+            // ignore
+        }
+    }
+
+    // Updates data of a given path
+    //
+    // Param:
+    //  - path: The path of the file/dir whose data is to be updated
+    //
+    // Return Value:
+    //  A promise that is resolved when the db has been updated or rejected
+    //  if an error occurred.
+    async _updatePath(path) {
         try {
             let stat = await fstat(path);
 
@@ -133,7 +205,7 @@ export default class MetaData {
             }
 
             // Update meta data
-            let retVal = await this.db.put(id, {
+            return this.db.put(id, {
                 name,
                 description,
                 downloads,
@@ -143,30 +215,9 @@ export default class MetaData {
                 size,
                 id
             });
-
-            let parentPath = Path.dirname(path);
-
-            try {
-                let data = await this.db.get(uuid(parentPath, UUID_NAMESPACE));
-
-                // Update parent directory. i.e. we traverse up the tree
-                // Fileindexer calls udpate for the specific path changed. This
-                // means that we are responsible for updating parents.
-                //
-                // NOTE: Updating parents shouldn't take a toll on performance.
-                // If it does we can optimize it by sending the child that was
-                // updated as a parameter.
-                await this.update(parentPath);
-            } catch (err) {
-                // Err occurs if there is an error updating parentPath
-                // or if parentPath is not there in db. In both cases
-                // ignore
-            }
-
-            return retVal;
         } catch (err) {
-            logger.error(`MetaData.update: ${err}`);
-            logger.debug(`MetaData.update: ${err.stack}`);
+            logger.error(`MetaData._updatePath: ${err}`);
+            logger.debug(`MetaData._updatePath: ${err.stack}`);
         }
     }
 
