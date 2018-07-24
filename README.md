@@ -35,3 +35,39 @@ incoming search requests and a HTTP server that serves files and meta data.
 
 The core library supports a lot of flexibility with respect to configuration
 however minimal support has been added to GUI as of v0.1.0.
+
+## Contributing
+
+The entire code base is split into 3 parts: core, gui and cli.
+
+### Core
+This is where media hub actually lives. It consists of 2 parts:
+
+- daemon: The daemon is the server that handles incoming UDP and HTTP requests.
+The UDP and HTTP services are managed by instances of the `UDPService`
+and `HTTPService` respectively. The code for the services can be found under
+`src/core/daemon/services`.
+
+There is also a file indexer that keeps track of shared files and maintains
+related meta data. The related files can be found in `src/core/daemon/fileIndex`.
+The classes exported from `fileIndex` are dependent on each other i.e. `FileIndex`
+`MetaData` and `SearchHandler` are coupled and not completely independent.
+
+Finally the entire daemon logic is abstracted away by the `Server` class exported
+from `src/core/daemon/server.js`. This makes it easy to use the daemon everywhere
+else.
+
+- client: The client provides support for UDP search requests. Making HTTP
+requests are left to the GUI or CLI apps. The `Client` class can be found under
+`src/core/client/client.js`.
+
+### GUI
+This contains the code for electron. `src/app/main.js` is the entry point for
+electron's main process. `src/app/render/index.js` is the entry point for
+electron's renderer process and the React App.
+
+The structure of the `render` directory is similar to a React-Redux web app.
+
+`src/app/utils/client.js` exports the client logic by extending upong the `Client`
+provided by core. `src/app/utils/fileDownloader.js` implements a file downloader
+which is used by client to actually download files.
