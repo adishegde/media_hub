@@ -8,7 +8,8 @@ import Winston from "winston";
 
 import {
     UUID_NAMESPACE,
-    DEFAULT_SERVER as DEFAULT
+    DEFAULT_SERVER as DEFAULT,
+    SEARCH_PARAMS
 } from "../../utils/constants";
 
 const logger = Winston.loggers.get("daemon");
@@ -48,16 +49,28 @@ export default class MetaData {
         this.db = db;
         this.ignore = ignore.map(exp => new RegExp(exp));
 
+        // We index ids based on names and their tags
+        //
+        // Using Object.create(null) creates an object with an empty prototype.
+        // This means that functions like "toString" and "valueOf" will not be
+        // present. Thus it's a pure dictionary.
+        //
+        // This will avoid any errors due to some file names or tags
+        // colliding with the properties.
+        this.names = Object.create(null);
+        this.tags = Object.create(null);
+
         // Bind methods to avoid unexpected binding errors
         // Since meta data is used in other classes heavily
         this.getDataFromId = this.getDataFromId.bind(this);
         this.getDataFromPath = this.getDataFromPath.bind(this);
-        this.getFileList = this.getFileList.bind(this);
+        this.getIndexList = this.getIndexList.bind(this);
         this.remove = this.remove.bind(this);
         this.update = this.update.bind(this);
         this.updateDownload = this.updateDownload.bind(this);
         this._updatePath = this._updatePath.bind(this);
         this.initialize = this.initialize.bind(this);
+        this.getDataFromIndex = this.getDataFromIndex.bind(this);
     }
 
     // Initializes db with the list of watched files.
@@ -140,7 +153,9 @@ export default class MetaData {
         try {
             let stat = await fstat(path);
 
-            let name = Path.basename(path);
+            let parsedPath = Path.parse(path);
+
+            let name = parsedPath.base;
             let downloads = 0;
             let description = "";
             let tags = [];
@@ -203,6 +218,16 @@ export default class MetaData {
                     size += child.size;
                 });
             }
+
+            // Add path to index
+            if (!this.names[parsedPath.name])
+                this.names[parsedPath.name] = new Set();
+            this.names[parsedPath.name].add(id);
+
+            tags.forEach(tag => {
+                if (!this.tags[tag]) this.tags[tag] = new Set();
+                this.tags[tag].add(id);
+            });
 
             // Update meta data
             return this.db.put(id, {
@@ -271,39 +296,116 @@ export default class MetaData {
     // Return value:
     //  A promise that resolve true if it was successful
     remove(path) {
-        return this.db.del(uuid(path, UUID_NAMESPACE)).then(
-            () => true,
-            err => {
-                // Ignore any error. Their mostly caused by the key not
-                // existing.
-                logger.debug(`MetaData.remove: ${err}`);
-                return false;
-            }
-        );
+        let id = uuid(path, UUID_NAMESPACE);
+
+        return this.db
+            .get(id)
+            .then(({ tags }) => {
+                let name = Path.parse(path).name;
+
+                //First remove from index
+
+                // There shoudn't be a case where the file is not indexed but a
+                // remove event is emitted but having a check gives safety
+                // nevertheless
+                if (this.names[name]) this.names[name].delete(id);
+                tags.forEach(tag => {
+                    if (this.tags[tag]) this.tags[tag].delete(id);
+                });
+
+                return this.db.del(id);
+            })
+            .then(
+                () => true,
+                err => {
+                    // Ignore any error. Their mostly caused by the key not
+                    // existing.
+                    logger.debug(`MetaData.remove: ${err}`);
+                    return false;
+                }
+            );
     }
 
-    // Get array of meta data objects
+    // Get array of all unique index values
+    //
+    // Param:
+    //  - param: A valid search param as exported by utils/constants
+    //
     // Return Value:
-    //  Array of meta data objects for each file that is indexed
-    getFileList() {
-        let dataList = [];
+    //  Array of file names (without extensions)
+    getIndexList(param) {
+        // A promise is not required here but wrapping it in one allows us to
+        // easily modify it later if needed
+        let list = this.names;
+        if (param === SEARCH_PARAMS.tags) list = this.tags;
 
-        return new Promise((resolve, reject) => {
-            // db creates a readstream of values
-            // We extract values and place it into an array
-            this.db
-                .createValueStream()
-                .on("data", data => {
-                    dataList.push(data);
-                })
-                .on("end", () => {
-                    resolve(dataList);
-                })
-                .on("error", () => {
-                    logger.error(`MetaData.FileList: ${err}`);
-                    logger.debug(`MetaData.FileList: ${err.stack}`);
-                    resolve(dataList);
-                });
-        });
+        return Promise.resolve(Object.keys(list));
+    }
+
+    // Get the list of meta data from array of items (as returned by
+    // getNameList or getTagList). The first `limit` items will be returned
+    // in the order of the items provided in `list`.
+    //
+    // Param:
+    //  - names: Array of names for which meta data will be provided
+    //  - index: Either 'names' or 'tags'. The index against which data will be
+    //  retrieved. Invalid options default to name
+    //  - limit [optional]: Number of items to retrieve. If not given all items are returned
+    //  - page [optional]: Multiple of limit to retrieve
+    //
+    // Return Value:
+    //  - Promise that is resolved to array of meta data objects
+    getDataFromIndex(list, index, limit, page = 1) {
+        if (!list || list.length === 0) return Promise.resolve([]);
+
+        // Convert the index name to index list
+        if (index === SEARCH_PARAMS.tags) index = this.tags;
+        else index = this.names;
+
+        // List of id's for which data should be retrieved
+        let idlist = [];
+
+        if (!limit) {
+            // Add all ids incase limit is not defined
+            list.forEach(item => {
+                idlist.push(...index[item]);
+            });
+        } else {
+            // The item number (not index) from which we have to start adding
+            let start = (page - 1) * limit + 1;
+
+            let current = 0; // Keep track of how many elements are over
+            let i = 0; // Used for iteration
+
+            while (i < list.length && current < start) {
+                current += index[list[i++]].size;
+            }
+
+            // Page is greater than number of results
+            // Return empty array
+            if (current < start) return Promise.resolve([]);
+
+            // current is greater than start which means a few elements from
+            // i - 1 might have to be added
+            idlist.push(...index[list[i - 1]]);
+            // Retain items from number "start"
+            idlist = idlist.splice(idlist.length - current + start - 1);
+
+            // Add next limit elements
+            while (i < list.length && idlist.length < limit) {
+                idlist.push(...index[list[i++]]);
+            }
+
+            // If idlist has less than limit elements then then the list is not
+            // affected
+            idlist = idlist.splice(0, limit);
+        }
+
+        // Get list of meta data objects. If it doesn't exist then return false
+        // If it doesn't exist then the result might have less than limit
+        // values but the expected behaviour is that it contains all ids.
+        return Promise.all(
+            idlist.map(id => this.db.get(id).catch(() => false))
+        ).then(mdlist => mdlist.filter(data => data));
     }
 }
