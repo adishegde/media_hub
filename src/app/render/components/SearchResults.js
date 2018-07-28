@@ -4,6 +4,7 @@ import { Segment, Grid, Button, Message } from "semantic-ui-react";
 
 import SearchBar from "./SearchBar";
 import FileTable from "./FileTable";
+import { SEARCH_PARAMS } from "core/utils/constants";
 
 export default class SearchResults extends React.Component {
     constructor(props) {
@@ -11,7 +12,7 @@ export default class SearchResults extends React.Component {
 
         this.state = {
             search: "",
-            param: "default"
+            param: SEARCH_PARAMS.names
         };
 
         this.onChange = this.onChange.bind(this);

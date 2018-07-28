@@ -8,9 +8,12 @@ externals = Object.keys(externals);
 
 // No need to bundle node modules for main process
 const mainProcConfig = {
-    entry: Path.resolve(__dirname, "src", "app", "main.js"),
+    entry: {
+        index: Path.resolve(__dirname, "src", "app", "main.js"),
+        daemon: Path.resolve(__dirname, "src", "app", "daemon.js")
+    },
     output: {
-        filename: "index.js",
+        filename: "[name].js",
         path: Path.resolve(__dirname, "app"),
         libraryTarget: "commonjs2"
     },
