@@ -96,6 +96,22 @@ function createWindow() {
             // Use the title set in main process rather than HTML title
             event.preventDefault();
         });
+
+    mainWindow.webContents.once("dom-ready", () => {
+        // In development install extensions
+        if (process.env.MH_ENV === "development") {
+            console.log("Development mode. Adding dev-tools.");
+
+            const Installer = require("electron-devtools-installer");
+
+            Promise.all([
+                Installer.default(Installer.REACT_DEVELOPER_TOOLS),
+                Installer.default(Installer.REDUX_DEVTOOLS)
+            ]).catch(err => {
+                console.log(`DevTools: ${err}`);
+            });
+        }
+    });
 }
 
 // Initialize app
@@ -141,20 +157,6 @@ function init() {
         }
     } catch (err) {
         console.log(`Init: ${err}`);
-    }
-
-    // In development install extensions
-    if (process.env.MH_ENV === "development") {
-        console.log("Development mode. Adding dev-tools.");
-
-        const Installer = require("electron-devtools-installer");
-
-        Promise.all([
-            Installer.default(Installer.REACT_DEVELOPER_TOOLS),
-            Installer.default(Installer.REDUX_DEVTOOLS)
-        ]).catch(err => {
-            console.log(`DevTools: ${err}`);
-        });
     }
 
     // Start auto updater
