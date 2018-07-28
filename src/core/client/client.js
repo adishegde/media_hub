@@ -12,7 +12,8 @@ import {
     DEFAULT_UDP_PORT,
     DEFAULT_NETWORK,
     DEFAULT_MULTICAST,
-    DEFAULT_HTTP_PORT
+    DEFAULT_HTTP_PORT,
+    SEARCH_PARAMS
 } from "../utils/constants";
 
 const logger = Winston.loggers.get("client");
@@ -73,12 +74,13 @@ export default class Client {
     // Broadcast search request
     // Params:
     //  - searchString: The string to search for
-    //  - param [optional]: Search for name or tag. Empty implies no data
-    //  will be sent to server.
+    //  - page: The page to retrieve
+    //  - param [optional]: Any value of SEARCH_PARAMS as exported by
+    //  utils/constants
     //
     //  Return Value:
     //   A Promise that is resolved to the results of the search
-    search(searchString, page = 1, param = "default") {
+    search(searchString, page = 1, param = SEARCH_PARAMS.names) {
         return new Promise((resolve, reject) => {
             if (typeof searchString !== "string") {
                 logger.debug(

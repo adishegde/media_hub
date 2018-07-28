@@ -27,3 +27,8 @@ export const DEFAULT_CLIENT = {
     timeout: 3000,
     useBroadcast: false
 };
+
+export const SEARCH_PARAMS = {
+    names: "names",
+    tags: "tags"
+};

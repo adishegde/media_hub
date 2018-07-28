@@ -449,7 +449,7 @@ class Client extends ClientCore {
     }
 }
 
-let client = new Client(remote.getGlobal("config"));
+let client = new Client(remote.getGlobal("config")._);
 
 // Create new client instance if config is updated
 // This ensures that client get's updated with the new settings

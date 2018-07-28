@@ -36,20 +36,20 @@ export default function FileData({
                             <Table.Cell>{type}</Table.Cell>
                         </Table.Row>
                         <Table.Row>
-                            <Table.Cell>Tags</Table.Cell>
-                            <Table.Cell>{tagLabels}</Table.Cell>
+                            <Table.Cell>Size</Table.Cell>
+                            <Table.Cell>{formatBytes(size)}</Table.Cell>
                         </Table.Row>
                         <Table.Row>
                             <Table.Cell>Downloads</Table.Cell>
                             <Table.Cell>{downloads}</Table.Cell>
                         </Table.Row>
                         <Table.Row>
-                            <Table.Cell>Description</Table.Cell>
-                            <Table.Cell>{description || "-"}</Table.Cell>
+                            <Table.Cell>Tags</Table.Cell>
+                            <Table.Cell>{tagLabels}</Table.Cell>
                         </Table.Row>
                         <Table.Row>
-                            <Table.Cell>Size</Table.Cell>
-                            <Table.Cell>{formatBytes(size)}</Table.Cell>
+                            <Table.Cell>Description</Table.Cell>
+                            <Table.Cell>{description || "-"}</Table.Cell>
                         </Table.Row>
                     </Table.Body>
                 </Table>

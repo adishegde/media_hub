@@ -12,6 +12,7 @@ import {
 
 import Logo from "app/assets/Logo.png";
 import SearchBar from "app/render/components/SearchBar";
+import { SEARCH_PARAMS } from "core/utils/constants";
 
 export default class Home extends React.Component {
     constructor(props) {
@@ -19,7 +20,7 @@ export default class Home extends React.Component {
 
         this.state = {
             search: "",
-            param: "default"
+            param: SEARCH_PARAMS.names
         };
 
         this.onChange = this.onChange.bind(this);

@@ -9,7 +9,10 @@ import Fuse from "fuse.js";
 import * as Path from "path";
 import Winston from "winston";
 
-import { DEFAULT_SERVER as DEFAULT } from "../../utils/constants";
+import {
+    DEFAULT_SERVER as DEFAULT,
+    SEARCH_PARAMS
+} from "../../utils/constants";
 import { isChild } from "../../utils/functions";
 
 const logger = Winston.loggers.get("daemon");
@@ -51,7 +54,7 @@ export default class SearchHandler {
     // Weighted fuzzy search on multiple properties
     // Params:
     //  - search: Search string
-    search(search, param = "default", page = 1) {
+    search(search, param = SEARCH_PARAMS.names, page = 1) {
         // Name of file is given a weightage of 70% and its tag a weightage of
         // 30%
         // Options for matching both tags and name
@@ -62,53 +65,34 @@ export default class SearchHandler {
             location: 0,
             distance: 100,
             maxPatternLength: 32,
-            minMatchCharLength: 1,
-            keys: [
-                {
-                    name: "name",
-                    weight: 0.7
-                },
-                {
-                    name: "tags",
-                    weight: 0.3
-                }
-            ]
+            minMatchCharLength: 1
         };
 
-        // In case of different params change options appropriately
-        if (param === "tag") {
-            options.keys = ["tags"];
-        } else if (param === "name") {
-            options.keys = ["name"];
-        }
+        // Invalid values are ignored and names is assumed
+        if (param !== SEARCH_PARAMS.tags) param = SEARCH_PARAMS.names;
 
-        return this.metaData.getFileList().then(files => {
-            let fuse = new Fuse(files, options);
-            let results = this._filterSearches(fuse.search(search));
+        return this.metaData.getIndexList(param).then(list => {
+            let fuse = new Fuse(list, options);
 
-            if (this.maxResults < 0) return results;
+            // The metadata now maintains an index in memory which is refreshed
+            // whenever the server restarts. This means we don't need to check
+            // for validity of the file paths.
+            let results = fuse.search(search);
+
+            // fuse.search returns an array of indices. We need to map it to
+            // the items
+            results = results.map(ind => list[ind]);
+
+            if (this.maxResults < 0)
+                return this.metaData.getDataFromIndex(results, param);
             // Return correct page
             else
-                return results.slice(
-                    (page - 1) * this.maxResults,
-                    page * this.maxResults
+                return this.metaData.getDataFromIndex(
+                    results,
+                    param,
+                    this.maxResults,
+                    page
                 );
         });
-    }
-
-    _filterSearches(results) {
-        // Additional check to ensure that only those paths that are
-        // shared should be returned. Else invalid search results will served
-        // by UDP service
-        results = results.filter(result => {
-            return isChild(result.path, this.share);
-        });
-
-        // Remove results that match even one ignore pattern
-        results = results.filter(
-            result => !this.ignore.some(re => re.test(result.path))
-        );
-
-        return results;
     }
 }

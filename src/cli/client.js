@@ -66,15 +66,14 @@ Program.version("0.4.1")
 
 Program.command("search <query> [page] [param]")
     .description(
-        "Search for files having [param] matching <query>. [param] can be tags/name. Default matches both. [page] is the pagination parameter."
+        "Search for files having [param] matching <query>. [param] can be tags/names. Default matches name. [page] is the pagination parameter."
     )
     .action((query, page, param) => {
         let options = setup();
 
         const ct = new Client(options);
         console.log(
-            `Searching for files with ${param ||
-                "names and tags"} as "${query}".`
+            `Searching for files with ${param || "names"} as "${query}".`
         );
         console.log(`Retrieving page ${page || 1}...\n`);
 

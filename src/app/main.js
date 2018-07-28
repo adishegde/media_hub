@@ -1,9 +1,7 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import * as Path from "path";
 import * as Url from "url";
-import * as Fs from "fs";
-import Level from "level";
-import Winston from "winston";
+import * as ChildProcess from "child_process";
 import { autoUpdater } from "electron-updater";
 
 import {
@@ -14,33 +12,35 @@ import {
     APP_NAME,
     DEFAULT_CONFIG,
     ipcMainChannels as Mch,
-    ipcRendererChannels as Rch
+    ipcRendererChannels as Rch,
+    daemonChannels as Dc
 } from "app/utils/constants";
-import Server from "core/daemon/server";
 import Config from "core/utils/config";
-import { addLogFile } from "core/utils/log";
-
-// Use daemon logger in main
-const logger = Winston.loggers.get("daemon");
-
-// Add logger to autoUpdater
-autoUpdater.logger = logger;
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
 
-// Reference to server
-let server;
-
 // Reference to app config handler
 let config;
 
-// Reference to db
-let db;
-
 // Log level for daemon and client logs
 let logLevel = "error";
+
+// Run the daemon in another process
+let subProcess = ChildProcess.fork(Path.join(__dirname, "daemon.js"));
+
+// Listen to any errors in sub process
+subProcess
+    .on("error", err => {
+        console.log(`Error in daemon: ${err}`);
+    })
+    .on("exit", (code, signal) => {
+        console.log(
+            `Sub process exited with code ${code} and signal ${signal}`
+        );
+    });
+console.log(`Subprocess created with pid ${subProcess.pid}`);
 
 // Use dev server in development mode
 let htmlUrl = Url.format({
@@ -96,6 +96,22 @@ function createWindow() {
             // Use the title set in main process rather than HTML title
             event.preventDefault();
         });
+
+    mainWindow.webContents.once("dom-ready", () => {
+        // In development install extensions
+        if (process.env.MH_ENV === "development") {
+            console.log("Development mode. Adding dev-tools.");
+
+            const Installer = require("electron-devtools-installer");
+
+            Promise.all([
+                Installer.default(Installer.REACT_DEVELOPER_TOOLS),
+                Installer.default(Installer.REDUX_DEVTOOLS)
+            ]).catch(err => {
+                console.log(`DevTools: ${err}`);
+            });
+        }
+    });
 }
 
 // Initialize app
@@ -106,14 +122,18 @@ function init() {
         let configFile = Path.join(userDataPath, CONFIG_FILE);
         let dbPath = Path.join(userDataPath, DB);
         let daemonLogFile = Path.join(userDataPath, DAEMON_LOG);
-        let clientLogFile = Path.join(userDataPath, CLIENT_LOG);
 
-        // Add daemon and client log files
-        addLogFile("daemon", daemonLogFile, logLevel);
-
-        // Create db
-        // Once created here, it's not closed for the lifetime of the app
-        db = Level(dbPath, { valueEncoding: "json" });
+        // Initialize sub process
+        // The subprocess sends a message with errors but currently there's
+        // use listening to it.
+        subProcess.send({
+            type: Dc.INIT,
+            payload: {
+                dbPath,
+                logPath: daemonLogFile,
+                logLevel
+            }
+        });
 
         // Assign the config handler to "config". This will be used throughout
         // the app to update the config file.
@@ -122,10 +142,6 @@ function init() {
         if (Object.keys(config._).length === 0) {
             // Config file didn't exist or was empty. We assign default settings
             config._ = { ...DEFAULT_CONFIG, db: dbPath };
-
-            // Enable self respond in development mode
-            if (process.env.MH_ENV === "development")
-                config._.selfRespond = true;
 
             // Write default settings to config file
             config.write();
@@ -137,52 +153,48 @@ function init() {
         createWindow();
 
         if (Object.keys(config._) !== 0) {
-            createServer();
+            restartDaemon();
         }
     } catch (err) {
-        console.log(err);
-    }
-
-    // In development install extensions
-    if (process.env.MH_ENV === "development") {
-        logger.info("Main: Development mode. Adding dev-tools.");
-
-        const Installer = require("electron-devtools-installer");
-
-        Promise.all([
-            Installer.default(Installer.REACT_DEVELOPER_TOOLS),
-            Installer.default(Installer.REDUX_DEVTOOLS)
-        ]).catch(err => {
-            console.log(err);
-        });
+        console.log(`Init: ${err}`);
     }
 
     // Start auto updater
     autoUpdater.checkForUpdatesAndNotify();
 }
 
-// Create new server instance
-function createServer() {
-    let promises = [];
-
-    // Stop server if it's running
-    if (server) promises = server.stop();
-
-    Promise.all(promises)
-        .catch(err => {
-            logger.error(`Main: Error stopping server. ${err}`);
-        })
-        .then(() => {
-            // Create new server using app settings
-            // Passes existing db instance
-            server = new Server(db, config._);
-            return Promise.all(Object.values(server.start()));
-        })
-        .catch(err => {
-            // if error occurs then emit error onto browser window
-            mainWindow.webContents.send(Rch.SERVER_ERROR, err);
-            logger.error(`Main: Error creating server. ${err}`);
+// Restart daemon
+function restartDaemon() {
+    return new Promise((resolve, reject) => {
+        subProcess.send({
+            type: Dc.RESTART,
+            payload: {
+                config: config._
+            }
         });
+
+        // The callback to be called when subprocess gives finished event
+        const callback = mssg => {
+            if (mssg.type === Dc.RESTART) {
+                // We remove the registered listener.
+                subProcess.removeListener("message", callback);
+
+                if (mssg.errors) {
+                    reject(mssg.errors);
+                } else {
+                    resolve();
+                }
+            }
+        };
+
+        // Adding a one time listener should have sufficed here. But there
+        // might be a case where multiple messages might be communicated in a
+        // short time. This makes sure we don't get any unexpected behaviour.
+        subProcess.on("message", callback);
+    }).catch(errs => {
+        // Log any errors
+        console.log(`Daemon.Restart: ${errs}`);
+    });
 }
 
 // Clean up resources on app exit
@@ -201,21 +213,35 @@ function cleanup() {
     // Wait for renderer process to close
     return rendererFinish
         .then(() => {
-            if (server) return Promise.all(Object.values(server.stop()));
+            // Send message to subprocess to cleanup
+            return new Promise((resolve, reject) => {
+                subProcess.send({
+                    type: Dc.CLEANUP
+                });
+
+                let callback = mssg => {
+                    if (mssg.type === Dc.CLEANUP) {
+                        if (mssg.errors) reject(mssg.errors);
+                        resolve();
+
+                        // Remove the added listener
+                        subProcess.removeListener("message", callback);
+                    }
+                    // Ignore any other message type
+                };
+
+                subProcess.on("message", callback);
+            });
         })
-        .catch(err => {
-            // An error in stopping server shouldn't affect the closing
-            // of db
-            logger.error(`Main: ${err}`);
+        .catch(errs => {
+            // Log error and process to kill subprocess
+            console.log(`Error while cleaning up: ${errs}`);
         })
         .then(() => {
-            if (db) return db.close();
-        })
-        .then(() => {
-            logger.info("Main: Cleaned all resources. Shutting down.");
-        })
-        .catch(err => {
-            logger.error(`Main: ${err}`);
+            // Kill the sub process
+            subProcess.kill();
+
+            console.log("Cleanup completed.");
         });
 }
 
@@ -233,12 +259,12 @@ ipcMain.on(Mch.CONFIG_UPDATE, (event, update) => {
 
         // Currently restarting server is equivalent to stopping old server and
         // creating a new instance
-        createServer();
+        restartDaemon();
     });
 });
 
 ipcMain.on(Mch.UPDATE_APP, () => {
-    logger.info("Main: Request to install update.");
+    console.log("Request to install update.");
 
     cleanup().then(() => {
         autoUpdater.quitAndInstall();
@@ -247,7 +273,7 @@ ipcMain.on(Mch.UPDATE_APP, () => {
 
 /* Autoupdater events help in managin renderer UI */
 autoUpdater.on("update-downloaded", info => {
-    ipcMain.send(Rch.UPDATE_AVAILABLE, info);
+    mainWindow.webContents.send(Rch.UPDATE_AVAILABLE, info);
 });
 
 /* Listeners for app events */
@@ -268,7 +294,7 @@ app.on("activate", function() {
 app.on("will-quit", e => {
     e.preventDefault();
 
-    logger.info(`Main: App quit initiated. Cleaning up`);
+    console.log(`App quit initiated. Cleaning up`);
 
     cleanup().then(() => {
         app.exit();
