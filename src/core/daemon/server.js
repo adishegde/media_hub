@@ -14,6 +14,16 @@ import { DEFAULT_SERVER as DEFAULT } from "../utils/constants";
 
 const logger = Winston.loggers.get("daemon");
 
+// Thunk to log errors. Used for promises below
+// Basically catches errors and rethrows it. This ensures that logs give
+// sufficient info, since this is the last point where daemon errors can be
+// logged
+let errLog = type => err => {
+    // Log error and rethrow for caller to handle
+    logger.error(`${type}: ${err}`);
+    throw err;
+};
+
 // Server takes db as a constructor argument. This is not necessarily an anti
 // pattern. Something similar to how an external db is connected to a web
 // server. This provides the necessary flexibility in the GUI app.
@@ -108,9 +118,15 @@ export default class Server {
     // Start services
     start() {
         return {
-            fileIndex: this.fileIndex.start(),
-            udp: this.udpServer.start(),
-            http: this.httpServer.start()
+            fileIndex: this.fileIndex
+                .start()
+                .catch(errLog("Server.start: FileIndex")),
+            udp: this.udpServer
+                .start()
+                .catch(errLog("Server.start: UDPService")),
+            http: this.httpServer
+                .start()
+                .catch(errLog("Server.start: HTTPService"))
         };
     }
 
@@ -118,12 +134,25 @@ export default class Server {
         let stopPromises = {};
 
         if (this.closeDb && this.db)
-            stopPromises.db = this.db.close().then(() => {
-                logger.info("Server.stop: Db connection closed.");
-            });
-        if (this.udpServer) stopPromises.udp = this.udpServer.stop();
-        if (this.fileIndex) stopPromises.fileIndex = this.fileIndex.stop();
-        if (this.httpServer) stopPromises.http = this.httpServer.stop();
+            stopPromises.db = this.db
+                .close()
+                .then(() => {
+                    logger.info("Server.stop: Db connection closed.");
+                })
+                .catch(errLog("Server.stop: Db"));
+
+        if (this.udpServer)
+            stopPromises.udp = this.udpServer
+                .stop()
+                .catch(errLog("Server.stop: UDPService"));
+        if (this.fileIndex)
+            stopPromises.fileIndex = this.fileIndex
+                .stop()
+                .catch(errLog("Server.stop: FileIndex"));
+        if (this.httpServer)
+            stopPromises.http = this.httpServer
+                .stop()
+                .catch(errLog("Server.stop: HTTPService"));
 
         return stopPromises;
     }
