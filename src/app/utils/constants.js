@@ -80,3 +80,10 @@ export const downloadStatus = {
 };
 
 export const REPO_URL = "https://github.com/adishegde/media_hub";
+
+// The message types for communication between daemon and main process
+export const daemonChannels = {
+    RESTART: "RESTART",
+    INIT: "INIT",
+    CLEANUP: "CLEANUP"
+};
