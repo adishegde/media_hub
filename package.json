@@ -2,7 +2,7 @@
     "name": "media_hub",
     "license": "MIT",
     "author": "Aditya Shridhar Hegde <adishegde@gmail.com>",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "licence": "MIT",
     "scripts": {
         "precommit": "pretty-quick --staged",
