@@ -5,6 +5,7 @@ import {
     DEFAULT_NETWORK,
     DEFAULT_UDP_PORT,
     DEFAULT_HTTP_PORT,
+    DEFAULT_MULTICAST,
     DEFAULT_CLIENT
 } from "core/utils/constants";
 
@@ -27,7 +28,8 @@ export const DEFAULT_CONFIG = {
     ...DEFAULT_CLIENT,
     network: DEFAULT_NETWORK,
     udpPort: DEFAULT_UDP_PORT,
-    httpPort: DEFAULT_HTTP_PORT
+    httpPort: DEFAULT_HTTP_PORT,
+    mcAddr: DEFAULT_MULTICAST
 };
 
 // Similar to an enum to define request status
