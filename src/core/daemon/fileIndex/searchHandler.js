@@ -13,7 +13,6 @@ import {
     DEFAULT_SERVER as DEFAULT,
     SEARCH_PARAMS
 } from "../../utils/constants";
-import { isChild } from "../../utils/functions";
 
 const logger = Winston.loggers.get("daemon");
 

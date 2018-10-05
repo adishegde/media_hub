@@ -7,11 +7,7 @@ export function isChild(path, dirList) {
     return dirList.some(dir => {
         let relative = Path.relative(dir, path);
 
-        return (
-            !!relative &&
-            !relative.startsWith("..") &&
-            !Path.isAbsolute(relative)
-        );
+        return !relative.startsWith("..") && !Path.isAbsolute(relative);
     });
 }
 
