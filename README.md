@@ -1,13 +1,28 @@
+<h1 align=center>
+<img src="logo/Logotype 1024.svg" width=50%>
+</h1>
+
 # Media Hub
 
 Lan based file sharing application.
 
+![Home Window](https://raw.githubusercontent.com/adishegde/media_hub/master/screenshots/home.png)
+![Search Results](https://raw.githubusercontent.com/adishegde/media_hub/master/screenshots/search_results.png)
+![Audio Streaming](https://raw.githubusercontent.com/adishegde/media_hub/master/screenshots/audio_stream.png)
+![Downloads](https://raw.githubusercontent.com/adishegde/media_hub/master/screenshots/downloads.png)
+
 ## Introduction
 
-Media Hub allows users to share directories on their devices through LAN. Users
-can search for files shared by all devices running Media Hub on the LAN and
-then download the file they want. Media Hub also maintains some meta data like
-description, tags and number of downloads of a file.
+A distributed file sharing application that works out of the box. Simply
+download the app and start sharing files over LAN. Features that set Media Hub
+apart:
+
+- Video and audio streaming
+- Fuzzy matching for improved searching
+- Flexible configuration options to share only required files
+- Support for meta data like "number of downloads", "file size" and "description"
+- Multicast and broadcast support
+- Easy to use core API for building other applications
 
 ## Installation
 
@@ -26,7 +41,7 @@ directory.
 Media Hub basically has 2 parts: client and server.
 
 The client is responsible for making search requests and downloading data. Search
-requests are UDP messsages currently made through multicast but the core
+requests are UDP messages currently made through multicast but the core
 library supports both broadcast and multicast. Files and their meta data are
 requested via HTTP.
 
@@ -38,7 +53,7 @@ however minimal support has been added to GUI as of v0.1.0.
 
 ## Contributing
 
-The entire code base is split into 3 parts: core, gui and cli.
+The entire code base is split into 3 parts: core, GUI and CLI.
 
 ### Core
 This is where media hub actually lives. It consists of 2 parts:
@@ -68,6 +83,6 @@ electron's renderer process and the React App.
 
 The structure of the `render` directory is similar to a React-Redux web app.
 
-`src/app/utils/client.js` exports the client logic by extending upong the `Client`
+`src/app/utils/client.js` exports the client logic by extending upon the `Client`
 provided by core. `src/app/utils/fileDownloader.js` implements a file downloader
 which is used by client to actually download files.
