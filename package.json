@@ -2,7 +2,7 @@
     "name": "media_hub",
     "license": "MIT",
     "author": "Aditya Shridhar Hegde <adishegde@gmail.com>",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "licence": "MIT",
     "scripts": {
         "postinstall": "electron-builder install-app-deps",
