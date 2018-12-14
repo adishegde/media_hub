@@ -5,7 +5,6 @@
     "version": "0.1.2",
     "licence": "MIT",
     "scripts": {
-        "precommit": "pretty-quick --staged",
         "postinstall": "electron-builder install-app-deps",
         "start": "MH_ENV=development ELECTRON_DISABLE_SECURITY_WARNINGS=true electron --port=5858 .",
         "watch": "MH_ENV=development webpack --mode=development && webpack-dev-server --mode=development --content-base dist/ --inline --port 1234",
@@ -63,6 +62,11 @@
         "webpack-node-externals": "^1.7.2",
         "winston": "^3.0.0-rc5"
     },
+    "husky": {
+        "hooks": {
+            "pre-commit": "pretty-quick --staged"
+        }
+    },
     "main": "app/index.js",
     "description": "Tool for sharing files over LAN",
     "dependencies": {
@@ -78,20 +82,20 @@
         ],
         "mac": {
             "category": "public.app-category.productivity",
-            "icon": "src/app/assets/logo/fav 30.ico"
+            "icon": "src/app/assets/logo/512 Black.png"
         },
         "win": {
             "target": [
                 "nsis"
             ],
-            "icon": "src/app/assets/logo/fav 30.ico"
+            "icon": "src/app/assets/logo/512 Black.png"
         },
         "linux": {
             "target": [
                 "deb",
                 "AppImage"
             ],
-            "icon": "src/app/assets/logo/fav 30.ico"
+            "icon": "src/app/assets/logo/512 Black.png"
         }
     }
 }
