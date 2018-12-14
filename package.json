@@ -77,18 +77,21 @@
             "node_modules/**/*"
         ],
         "mac": {
-            "category": "public.app-category.productivity"
+            "category": "public.app-category.productivity",
+            "icon": "src/app/assets/logo/fav 30.ico"
         },
         "win": {
             "target": [
                 "nsis"
-            ]
+            ],
+            "icon": "src/app/assets/logo/fav 30.ico"
         },
         "linux": {
             "target": [
                 "deb",
                 "AppImage"
-            ]
+            ],
+            "icon": "src/app/assets/logo/fav 30.ico"
         }
     }
 }
