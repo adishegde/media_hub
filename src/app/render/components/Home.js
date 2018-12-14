@@ -10,7 +10,7 @@ import {
     Icon
 } from "semantic-ui-react";
 
-import Logo from "app/assets/Logo.png";
+import Logo from "app/assets/logo/Logotype 1024.png";
 import SearchBar from "app/render/components/SearchBar";
 import { SEARCH_PARAMS } from "core/utils/constants";
 

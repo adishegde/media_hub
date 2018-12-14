@@ -201,7 +201,9 @@ function restartDaemon() {
 function cleanup() {
     let rendererFinish = Promise.resolve();
     // Close main window. This will case mainWindow to start it's cleanup
-    if (mainWindow.isClosable()) {
+    // We check for mainWindow too since in OSX the app might be running
+    // without a window
+    if (mainWindow && mainWindow.isClosable()) {
         mainWindow.close();
         rendererFinish = new Promise(resolve => {
             mainWindow.once("closed", () => {

@@ -7,10 +7,22 @@ import {
     Accordion,
     Icon
 } from "semantic-ui-react";
+import { shell } from "electron";
 
 import FileIcon from "../FileIcon";
 import { formatBytes } from "app/utils/functions";
 import { downloadStatus } from "app/utils/constants";
+
+// Shows the file in the parent folder
+function showItemInFolder(path) {
+    let successful = shell.showItemInFolder(path);
+
+    // TODO: Show proper error message to user, probably when notification
+    // system is complete
+    if (!successful) {
+        console.error("Error while displaying file in folder");
+    }
+}
 
 export default function DownloadItem({
     error,
@@ -48,8 +60,24 @@ export default function DownloadItem({
             desc = `Downloaded to ${path}`;
         }
 
+        let showItem;
+        if (status === downloadStatus.finished) {
+            // Add button to view parent directory
+            showItem = (
+                <Button
+                    primary
+                    size="tiny"
+                    floated="right"
+                    onClick={() => showItemInFolder(path)}
+                >
+                    Show Item<Icon name="right chevron" />
+                </Button>
+            );
+        }
+
         let errList;
         if (error && error.length) {
+            // If errors occured display them
             errList = (
                 <Accordion
                     panels={[
@@ -78,9 +106,10 @@ export default function DownloadItem({
                 <FileIcon as={Item.Icon} name={name} />
                 <Item.Content>
                     <Item.Header>{name}</Item.Header>
-                    <Item.Meta>{`Size: ${formatBytes(
-                        size
-                    )} Date: ${date}`}</Item.Meta>
+                    <Item.Meta>
+                        {`Size: ${formatBytes(size)} Date: ${date}`}
+                        {showItem}
+                    </Item.Meta>
                     <Item.Description>{desc}</Item.Description>
                     <Item.Extra>{errList}</Item.Extra>
                 </Item.Content>

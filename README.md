@@ -1,3 +1,7 @@
+<h1 align=center>
+<img src="logo/Logotype 1024.svg" width=50%>
+</h1>
+
 # Media Hub
 
 Lan based file sharing application.
