@@ -1,7 +1,3 @@
-<h1 align=center>
-<img src="src/app/assets/logo/Logotype 1024.svg" width=50%>
-</h1>
-
 Lan based file sharing application.
 
 ![Home Window](https://raw.githubusercontent.com/adishegde/media_hub/master/screenshots/home.png)
